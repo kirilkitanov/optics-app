@@ -1,0 +1,27 @@
+<div class="sidebar" th:fragment="sidebar-fragment" xmlns:th="http://www.thymeleaf.org">
+
+
+    <div class="logo" id="sidebarLogoContainer">
+        <img th:src="@{/images/logo.png}" alt="Лого" class="sidebar-logo-img" id="sidebarLogoImg">
+    </div>
+
+    <nav>
+        <a th:href="@{/home}" class="active">Начало</a>
+        <a th:href="@{/products}">Продукти</a>
+        <a th:href="@{/customers}">Клиенти</a>
+        <a th:href="@{/orders}">Поръчки</a>
+        <a th:href="@{/deliveries}">Доставки</a>
+        <a th:href="@{/reports}">Справки</a>
+        <a th:href="@{/system}">Система</a>
+    </nav>
+
+
+    <script>
+        document.getElementById('sidebarLogoImg').addEventListener('error', function() {
+            var container = document.getElementById('sidebarLogoContainer');
+            if (container) {
+                container.style.display = 'none';
+            }
+        });
+    </script>
+</div>

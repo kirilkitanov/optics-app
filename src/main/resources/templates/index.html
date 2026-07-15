@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Начало</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+
+<div class="app-wrapper">
+
+    <!-- HEADER -->
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-container">
+
+        <!-- SIDEBAR -->
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <!-- CONTENT -->
+        <section class="content">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Чакащи поръчки</h1>
+                <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
+            </div>
+
+            <div class="table-container" th:if="${not #lists.isEmpty(orders)}">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Номер</th>
+                        <th>Клиент</th>
+                        <th>Телефон</th>
+                        <th>Дължима сума</th>
+                        <th>Статус</th>
+                        <th>Промяна на статус</th>
+                        <th>Действия</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="order : ${orders}">
+                        <td th:text="${#temporals.format(order.date, 'dd.MM.yyyy')}"></td>
+                        <td th:text="${order.id}"></td>
+                        <td th:text="${order.customerName}"></td>
+                        <td th:text="${order.phone}"></td>
+                        <td th:text="${order.amountDue > 0} ? ${order.amountDue} + ' лв.' : 'Платено'"></td>
+                        <td th:text="${order.status}"></td>
+
+                        <td>
+                            <form th:action="@{/orders/update-status/{id}(id=${order.id})}" method="post">
+                                <select name="status" class="status-select" onchange="this.form.submit()">
+                                    <option value="ЧАКА СТЪКЛА">ЧАКА СТЪКЛА</option>
+                                    <option value="ГОТОВА ЗА ВЗИМАНЕ">ГОТОВА ЗА ВЗИМАНЕ</option>
+                                    <option value="ВЗЕТА">ВЗЕТА</option>
+                                </select>
+                            </form>
+                        </td>
+
+                        <td>
+                            <button class="btn-open">Отвори</button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-orders-container" th:if="${#lists.isEmpty(orders)}">
+                Няма намерени чакащи поръчки.
+            </div>
+
+        </section>
+    </div>
+</div>
+
+</body>
+</html>

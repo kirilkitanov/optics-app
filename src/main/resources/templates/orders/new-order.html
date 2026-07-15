@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нова поръчка</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Нова поръчка</h1>
+                <a th:href="@{/orders}" class="btn-new-order">Назад</a>
+            </div>
+
+            <div class="table-container">
+
+                <form th:action="@{/orders/new}" method="POST">
+
+                    <!-- CLIENT -->
+                    <div class="form-group">
+                        <label class="form-label">Клиент *</label>
+
+                        <div style="display:flex; gap:10px; align-items:center;">
+
+                            <select id="customerSelect" name="customerId" class="status-select" required>
+                                <option value="">-- Избери клиент --</option>
+
+                                <option th:each="c : ${customers}"
+                                        th:value="${c.id}"
+                                        th:text="${c.fullName + ' - ' + c.phone}">
+                                </option>
+                            </select>
+
+                            <button type="button" class="btn-new-order" onclick="openCustomerModal()">
+                                + Нов
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <!-- TABLE -->
+                    <h3 class="section-title">Спецификация</h3>
+
+                    <table id="prescriptionTable">
+
+                        <thead>
+                        <tr>
+                            <th>Око</th>
+                            <th>Категория</th>
+                            <th>Баркод</th>
+                            <th>Бранд</th>
+                            <th>Модел</th>
+                            <th>Диаметър/Размер</th>
+
+                            <th>SPH</th>
+                            <th>CYL</th>
+                            <th>ADD</th>
+                            <th>PRISM</th>
+                            <th>AXIS</th>
+                            <th>BASE</th>
+
+                            <th>К-во</th>
+                            <th>Цена</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr class="item-row">
+
+                            <!-- EYE -->
+                            <td>
+                                <select name="items[0].eyeSide" class="status-select">
+                                    <option value="NONE">--</option>
+                                    <option value="LEFT">Ляво</option>
+                                    <option value="RIGHT">Дясно</option>
+                                </select>
+                            </td>
+
+                            <!-- CATEGORY -->
+                            <td>
+                                <select name="items[0].category" class="status-select">
+                                    <option value="LENS">Лещи</option>
+                                    <option value="FRAME">Рамка</option>
+                                    <option value="SUNGLASSES">Слънчеви</option>
+                                    <option value="CONTACT_LENS">Контактни</option>
+                                    <option value="ACCESSORY">Аксесоар</option>
+                                </select>
+                            </td>
+
+                            <!-- BARCODE -->
+                            <td>
+                                <input type="text" name="items[0].barcode" class="status-select" placeholder="Сканирай">
+                            </td>
+
+                            <!-- BRAND -->
+                            <td>
+                                <input type="text" name="items[0].brand" class="status-select">
+                            </td>
+
+                            <!-- MODEL -->
+                            <td>
+                                <input type="text" name="items[0].model" class="status-select">
+                            </td>
+
+                            <!-- SIZE -->
+                            <td>
+                                <input type="text" name="items[0].sizeOrDiameter" class="status-select">
+                            </td>
+
+                            <!-- SPH -->
+                            <td><input type="number" step="0.25" name="items[0].sph" class="status-select"></td>
+
+                            <!-- CYL -->
+                            <td><input type="number" step="0.25" name="items[0].cyl" class="status-select"></td>
+
+                            <!-- ADD -->
+                            <td><input type="number" step="0.25" name="items[0].addPower" class="status-select"></td>
+
+                            <!-- PRISM -->
+                            <td><input type="number" step="0.1" name="items[0].prism" class="status-select"></td>
+
+                            <!-- AXIS -->
+                            <td><input type="number" name="items[0].axis" class="status-select"></td>
+
+                            <!-- BASE -->
+                            <td><input type="text" name="items[0].prismBase" class="status-select"></td>
+
+                            <!-- QTY -->
+                            <td><input type="number" name="items[0].quantity" value="1" class="status-select"></td>
+
+                            <!-- PRICE -->
+                            <td><input type="number" step="0.01" name="items[0].priceAtPurchase" class="status-select"></td>
+
+                            <td>
+                                <button type="button" onclick="removeRow(this)" class="btn-open">X</button>
+                            </td>
+
+                        </tr>
+                        </tbody>
+
+                    </table>
+
+                    <!-- DATALISTS -->
+                    <datalist id="brandSuggestions">
+                        <option th:each="p : ${products}" th:value="${p.brand}"></option>
+                    </datalist>
+
+                    <datalist id="modelSuggestions">
+                        <option th:each="p : ${products}" th:value="${p.model}"></option>
+                    </datalist>
+
+                    <button type="button" id="addRowBtn" class="btn-new-order">Добави ред</button>
+
+                    <!-- TOTALS -->
+                    <div class="financial-box">
+
+                        <div class="financial-group">
+                            <label>Общо</label>
+                            <input type="number" name="totalBeforeDiscount" readonly value="0">
+                        </div>
+
+                        <div class="financial-group">
+                            <label>Отстъпка %</label>
+                            <input type="number" name="discountPercentage" value="0">
+                        </div>
+
+                        <div class="financial-group">
+                            <label>Крайна сума</label>
+                            <input type="number" name="total">
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order">Запази</button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
+<script>
+    document.getElementById('addRowBtn').addEventListener('click', function () {
+
+        let tbody = document.querySelector('#prescriptionTable tbody');
+        let rows = tbody.querySelectorAll('.item-row');
+        let index = rows.length;
+
+        let newRow = rows[0].cloneNode(true);
+
+        newRow.querySelectorAll('input, select').forEach(el => {
+
+            if (el.name) {
+                let field = el.name.split('.').pop();
+                el.name = `items[${index}].${field}`;
+            }
+
+            if (el.tagName === 'INPUT') {
+                el.value = '0';
+            }
+
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+            }
+        });
+
+        tbody.appendChild(newRow);
+        recalcBaseTotal();
+    });
+
+    function removeRow(btn) {
+        let tbody = document.querySelector('#prescriptionTable tbody');
+        let rows = tbody.querySelectorAll('.item-row');
+
+        if (rows.length > 1) {
+            btn.closest('tr').remove();
+
+            tbody.querySelectorAll('.item-row').forEach((row, i) => {
+                row.querySelectorAll('input, select').forEach(el => {
+                    if (el.name) {
+                        let field = el.name.split('.').pop();
+                        el.name = `items[${i}].${field}`;
+                    }
+                });
+            });
+            recalcBaseTotal();
+        }
+    }
+</script>
+
+<script>
+    function getBaseTotal() {
+        return parseFloat(document.querySelector('input[name="totalBeforeDiscount"]').value || 0);
+    }
+
+    function setTotal(value) {
+        document.querySelector('input[name="total"]').value = value.toFixed(2);
+    }
+
+    function setDiscount(value) {
+        document.querySelector('input[name="discountPercentage"]').value = value.toFixed(2);
+    }
+
+    // % -> total
+    document.querySelector('input[name="discountPercentage"]').addEventListener('input', function () {
+
+        const base = getBaseTotal();
+        const discount = parseFloat(this.value || 0);
+
+        const total = base - (base * discount / 100);
+
+        setTotal(total);
+    });
+
+    // total -> %
+    document.querySelector('input[name="total"]').addEventListener('input', function () {
+
+        const base = getBaseTotal();
+        const total = parseFloat(this.value || 0);
+
+        if (base <= 0) return;
+
+        const discount = ((base - total) / base) * 100;
+
+        setDiscount(discount);
+    });
+</script>
+
+<script>
+    function recalcBaseTotal() {
+
+        let rows = document.querySelectorAll('.item-row');
+        let total = 0;
+
+        rows.forEach(row => {
+
+            let qty = parseFloat(row.querySelector('input[name$=".quantity"]')?.value || 0);
+            let price = parseFloat(row.querySelector('input[name$=".priceAtPurchase"]')?.value || 0);
+
+            total += qty * price;
+        });
+
+        document.querySelector('input[name="totalBeforeDiscount"]').value = total.toFixed(2);
+
+        document.querySelector('input[name="discountPercentage"]').dispatchEvent(new Event('input'));
+        document.querySelector('input[name="total"]').dispatchEvent(new Event('input'));
+
+        return total;
+    }
+</script>
+
+<script>
+    document.addEventListener("input", function (e) {
+
+        if (
+            e.target.name?.includes("quantity") ||
+            e.target.name?.includes("priceAtPurchase")
+        ) {
+            recalcBaseTotal();
+        }
+    });
+</script>
+
+<div id="customerModal" class="modal" style="display:none;">
+    <div class="modal-content">
+
+        <h3>Нов клиент</h3>
+
+        <label>Име</label>
+        <input type="text" id="newCustomerName" class="status-select">
+
+        <label>Телефон</label>
+        <input type="text" id="newCustomerPhone" class="status-select">
+
+        <div style="margin-top:15px; display:flex; gap:10px;">
+            <button type="button" class="btn-new-order" onclick="saveCustomer()">Запази</button>
+            <button type="button" class="btn-open" onclick="closeCustomerModal()">Отказ</button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function openCustomerModal() {
+        document.getElementById("customerModal").style.display = "flex";
+    }
+
+    function closeCustomerModal() {
+        document.getElementById("customerModal").style.display = "none";
+    }
+</script>
+
+<script>
+    function saveCustomer() {
+
+        const name = document.getElementById("newCustomerName").value;
+        const phone = document.getElementById("newCustomerPhone").value;
+
+        fetch("/customers/quick-create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                name: name,
+                phoneNumber: phone
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+
+                // добавяме новия клиент в dropdown
+                const select = document.getElementById("customerSelect");
+
+                const option = document.createElement("option");
+                option.value = data.id;
+                option.text = data.name + " - " + data.phoneNumber;
+
+                select.appendChild(option);
+
+                // автоматично го избираме
+                select.value = data.id;
+
+                closeCustomerModal();
+            });
+    }
+</script>
+
+</body>
+</html>

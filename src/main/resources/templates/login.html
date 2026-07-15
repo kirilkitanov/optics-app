@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpticsApp - Вход</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <link rel="stylesheet" th:href="@{/css/login.css}">
+</head>
+<body>
+
+<div class="login-page">
+    <div class="login-card">
+
+        <div class="login-logo">OpticsApp</div>
+        <h1 class="login-title">Вход в системата</h1>
+
+        <form th:action="@{/login}" th:method="POST" th:object="${loginRequest}">
+
+            <div class="form-group">
+                <label for="username">Потребителско име</label>
+                <input type="text" id="username" placeholder="Въведете потребител" th:field="*{username}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Парола</label>
+                <input type="password" id="password" placeholder="Въведете парола" th:field="*{password}" required>
+                <p class="error-message" th:if="${errorMessage}" th:text="${errorMessage}">Грешно потребителско име или парола.</p>
+            </div>
+
+            <button type="submit" class="btn-login">Вход</button>
+
+        </form>
+
+        <div class="login-subtitle">Безплатен софтуер за управление на оптики</div>
+        <div class="login-footer">Версия 1.0</div>
+
+    </div>
+</div>
+
+</body>
+</html>

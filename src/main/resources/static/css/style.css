@@ -1,0 +1,552 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f4f6f8;
+}
+
+/* --- ХЕДЪР (Направена по-тясна линия чрез намален padding) --- */
+.header {
+    background-color: #ffffff;
+    padding: 8px 30px; /* Намалено от 15px на 8px за по-тясна лента */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.software-info h2 {
+    font-size: 18px;
+    color: #1f4e79;
+}
+
+.software-info .subtitle {
+    font-size: 11px;
+    color: #666666;
+    display: block;
+    margin-top: 1px;
+}
+
+.user-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Потребителят е в синьо */
+.logged-user {
+    color: #1f4e79;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* Бутонът Изход е заоблен с 8px като останалите бутони */
+.btn-logout {
+    background-color: #ff8c00;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 8px; /* Заоблен напълно */
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.btn-logout:hover {
+    background-color: #e07b00;
+}
+
+/* --- ЛЕЯУТ НА СТРАНИЦАТА --- */
+.app-wrapper {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.main-container {
+    display: flex;
+    flex: 1; /* НЕ height 100vh */
+    overflow: hidden;
+}
+
+/* --- ВЕРТИКАЛЕН САЙДБАР --- */
+.sidebar {
+    width: 180px;
+    background-color: #1f4e79;
+    color: white;
+    padding: 15px 0;
+    flex-shrink: 0;
+}
+
+/* Текстът "Оптика" се скрива, ако няма лого изображение */
+.sidebar .logo {
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.sidebar-logo-img {
+    width: 100px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar nav a {
+    color: #e0e0e0;
+    text-decoration: none;
+    padding: 12px 20px;
+    font-size: 15px;
+    transition: background 0.2s, color 0.2s;
+}
+
+.sidebar nav a:hover, .sidebar nav a.active {
+    background-color: #163856;
+    color: #ffffff;
+}
+
+/* --- СЕКЦИЯ СЪДЪРЖАНИЕ --- */
+.content {
+    flex-grow: 1;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 15px;
+}
+
+.no-orders-container {
+    text-align: center;
+    padding: 40px;
+    color: #777777;
+    font-size: 16px;
+    font-style: italic;
+    background: transparent; /* Изцяло прозрачно, за да не дразни окото */
+    margin: auto 0; /* Центрира съобщението вертикално в празното пространство */
+}
+
+/* СИНЬО ЗАГЛАВИЕ (Добавен липсващ клас) */
+.page-title-blue {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1f4e79; /* Марковото синьо */
+}
+
+/* Оранжевият бутон "Нова поръчка" */
+.btn-new-order {
+    background-color: #ff8c00;
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: normal;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+.btn-new-order:hover {
+    background-color: #e07b00;
+}
+
+/* --- ТАБЛИЦА --- */
+.table-container {
+    background: #ffffff;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+    background: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+th {
+    background-color: #1f4e79;
+    color: white;
+    padding: 15px 20px;
+    font-size: 15px;
+    font-weight: bold;
+    text-align: left;
+}
+
+td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eeeeee;
+    font-size: 14px;
+    color: #333333;
+}
+
+/* Стил за падащото меню в таблицата */
+.status-select {
+    padding: 6px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #333333;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.status-select:focus {
+    border-color: #1f4e79;
+}
+
+/* Оранжев бутон "Отвори" */
+.btn-open {
+    background-color: #ff8c00;
+    color: white;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-open:hover {
+    background-color: #e07b00;
+}
+
+/* --- АДАПТИВНОСТ ЗА МОБИЛНИ УСТРОЙСТВА --- */
+@media (max-width: 768px) {
+    .header {
+        padding: 10px 15px;
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .user-box {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .main-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 15px 0;
+    }
+
+    .sidebar .logo {
+        text-align: center;
+        padding-bottom: 15px;
+        margin-bottom: 10px;
+    }
+
+    .sidebar nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        padding: 0 10px;
+    }
+
+    .sidebar nav a {
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+
+    .content {
+        padding: 20px 15px;
+    }
+
+    .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .content-header h1 {
+        font-size: 22px;
+    }
+
+    .btn-new-order {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    width: 350px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ==========================================================================
+   ОПТИМИЗАЦИЯ НА ФОРМАТА ЗА НОВА ПОРЪЧКА И ПРЕМАХВАНЕ НА СКРОЛА
+   ========================================================================== */
+
+/* Общи корекции за формата */
+.form-group {
+    margin-bottom: 20px;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    color: #1f4e79;
+    margin-bottom: 8px;
+}
+
+.section-title {
+    font-size: 18px;
+    color: #1f4e79;
+    margin: 25px 0 15px 0;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+/* Корекция на селекта за Клиент */
+#customerSelect {
+    flex-grow: 1;
+    height: 38px;
+}
+
+/* Бутони и елементи във формата */
+button[type="button"].btn-new-order,
+button[type="submit"].btn-new-order {
+    border: none;
+    cursor: pointer;
+}
+
+#addRowBtn {
+    margin-top: 15px;
+    display: inline-block;
+}
+
+/* Оптимизация на таблицата и нейните input полета за екрани */
+#prescriptionTable input.status-select,
+#prescriptionTable select.status-select {
+    width: 100%;
+    min-width: 65px; /* Предотвратява разтягането на колоните */
+    height: 32px;
+    padding: 4px 6px;
+}
+
+/* Премахване на хоризонталния скрол чрез трансформиране на таблицата на малки/средни екрани */
+@media (max-width: 1400px) {
+    #prescriptionTable,
+    #prescriptionTable thead,
+    #prescriptionTable tbody,
+    #prescriptionTable tr,
+    #prescriptionTable td {
+        display: block;
+    }
+
+    /* Скриваме заглавията на таблицата, защото ще ги вградим в самите полета */
+    #prescriptionTable thead {
+        display: none;
+    }
+
+    #prescriptionTable .item-row {
+        background: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    #prescriptionTable td {
+        border: none;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Автоматично добавяне на етикети над всяко поле в мобилен изглед, използвайки data-атрибути или ред на полето */
+    #prescriptionTable td::before {
+        font-size: 11px;
+        font-weight: bold;
+        color: #1f4e79;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
+
+    /* Дефиниране на етикети според поредността на колоните */
+    #prescriptionTable td:nth-child(1)::before { content: "Око"; }
+    #prescriptionTable td:nth-child(2)::before { content: "Категория"; }
+    #prescriptionTable td:nth-child(3)::before { content: "Баркод"; }
+    #prescriptionTable td:nth-child(4)::before { content: "Бранд"; }
+    #prescriptionTable td:nth-child(5)::before { content: "Модел"; }
+    #prescriptionTable td:nth-child(6)::before { content: "Размер"; }
+    #prescriptionTable td:nth-child(7)::before { content: "SPH"; }
+    #prescriptionTable td:nth-child(8)::before { content: "CYL"; }
+    #prescriptionTable td:nth-child(9)::before { content: "ADD"; }
+    #prescriptionTable td:nth-child(10)::before { content: "PRISM"; }
+    #prescriptionTable td:nth-child(11)::before { content: "AXIS"; }
+    #prescriptionTable td:nth-child(12)::before { content: "BASE"; }
+    #prescriptionTable td:nth-child(13)::before { content: "К-во"; }
+    #prescriptionTable td:nth-child(14)::before { content: "Цена"; }
+
+    /* Специално позициониране за бутона за изтриване (Х) на реда */
+    #prescriptionTable td:last-child {
+        grid-column: 1 / -1;
+        align-items: flex-end;
+        margin-top: 5px;
+        border-top: 1px dashed #eeeeee;
+        padding-top: 10px;
+    }
+
+    #prescriptionTable td:last-child::before {
+        display: none;
+    }
+}
+
+/* --- СТИЛИЗИРАНЕ НА СЕКТОР ФИНАНСИ (TOTALS) --- */
+.financial-box {
+    background: #ffffff;
+    border: 1px solid #1f4e79;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 30px;
+    max-width: 350px;
+    margin-left: auto; /* Избутва финансовия блок вдясно */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.financial-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.financial-group label {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333333;
+}
+
+.financial-group input {
+    width: 150px;
+    height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    text-align: right;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333333;
+    outline: none;
+}
+
+/* Отличаване на финалното поле за плащане */
+.financial-group input[name="total"] {
+    border-color: #ff8c00;
+    color: #ff8c00;
+    background-color: #fffaf5;
+    font-size: 16px;
+}
+
+.financial-group input[readonly] {
+    background-color: #f4f6f8;
+    color: #666666;
+    border-color: #e0e0e0;
+}
+
+/* Действия в долната част на формата */
+.form-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.form-actions .btn-new-order {
+    padding: 12px 35px;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+/* Подобрения по модалния прозорец за клиент за консистентност */
+.modal-content h3 {
+    color: #1f4e79;
+    font-size: 18px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid #eeeeee;
+    padding-bottom: 8px;
+}
+
+.modal-content label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #666666;
+}
+
+.modal-content input {
+    height: 36px;
+    padding: 6px 10px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    outline: none;
+}
+
+.modal-content input:focus {
+    border-color: #1f4e79;
+}

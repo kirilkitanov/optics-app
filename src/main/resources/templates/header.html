@@ -1,0 +1,14 @@
+<div class="header" th:fragment="header-fragment" xmlns:th="http://thymeleaf.org">
+    <div class="software-info">
+        <h2>OpticsApp</h2>
+    </div>
+
+    <div class="user-box">
+
+        <span class="logged-user" th:text="${#authentication.name}">User</span>
+
+        <form th:action="@{/logout}" th:method="POST" style="display: inline;">
+            <button type="submit" class="btn-logout">Изход</button>
+        </form>
+    </div>
+</div>
