@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Нова поръчка</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta th:name="_csrf" th:content="${_csrf.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
 
@@ -56,8 +58,8 @@
 
                         <thead>
                         <tr>
-                            <th>Око</th>
                             <th>Категория</th>
+                            <th>Око</th>
                             <th>Баркод</th>
                             <th>Бранд</th>
                             <th>Модел</th>
@@ -79,23 +81,23 @@
                         <tbody>
                         <tr class="item-row">
 
-                            <!-- EYE -->
+                            <!-- CATEGORY -->
                             <td>
+                                <select name="items[0].category" class="status-select category-trigger" onchange="toggleFieldsByCategory(this)">
+                                    <option value="LENS">Стъкла</option>
+                                    <option value="FRAME">Рамка</option>
+                                    <option value="SUNGLASSES">Слънчеви</option>
+                                    <option value="CONTACT_LENS">Контактни лещи</option>
+                                    <option value="ACCESSORY">Аксесоар</option>
+                                </select>
+                            </td>
+
+                            <!-- EYE -->
+                            <td class="diopter-field">
                                 <select name="items[0].eyeSide" class="status-select">
                                     <option value="NONE">--</option>
                                     <option value="LEFT">Ляво</option>
                                     <option value="RIGHT">Дясно</option>
-                                </select>
-                            </td>
-
-                            <!-- CATEGORY -->
-                            <td>
-                                <select name="items[0].category" class="status-select">
-                                    <option value="LENS">Лещи</option>
-                                    <option value="FRAME">Рамка</option>
-                                    <option value="SUNGLASSES">Слънчеви</option>
-                                    <option value="CONTACT_LENS">Контактни</option>
-                                    <option value="ACCESSORY">Аксесоар</option>
                                 </select>
                             </td>
 
@@ -120,22 +122,22 @@
                             </td>
 
                             <!-- SPH -->
-                            <td><input type="number" step="0.25" name="items[0].sph" class="status-select"></td>
+                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].sph" class="status-select"></td>
 
                             <!-- CYL -->
-                            <td><input type="number" step="0.25" name="items[0].cyl" class="status-select"></td>
+                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].cyl" class="status-select"></td>
 
                             <!-- ADD -->
-                            <td><input type="number" step="0.25" name="items[0].addPower" class="status-select"></td>
+                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].addPower" class="status-select"></td>
 
                             <!-- PRISM -->
-                            <td><input type="number" step="0.1" name="items[0].prism" class="status-select"></td>
+                            <td class="diopter-field"><input type="number" step="0.1" name="items[0].prism" class="status-select"></td>
 
                             <!-- AXIS -->
-                            <td><input type="number" name="items[0].axis" class="status-select"></td>
+                            <td class="diopter-field"><input type="number" name="items[0].axis" class="status-select" oninput="makeAxisCyclic(this)"></td>
 
                             <!-- BASE -->
-                            <td><input type="text" name="items[0].prismBase" class="status-select"></td>
+                            <td class="diopter-field"><input type="text" name="items[0].prismBase" class="status-select"></td>
 
                             <!-- QTY -->
                             <td><input type="number" name="items[0].quantity" value="1" class="status-select"></td>
@@ -221,6 +223,7 @@
         });
 
         tbody.appendChild(newRow);
+        toggleFieldsByCategory(newRow.querySelector('.category-trigger'));
         recalcBaseTotal();
     });
 
@@ -348,38 +351,97 @@
 
 <script>
     function saveCustomer() {
+        const name = document.getElementById("newCustomerName").value.trim();
+        const phone = document.getElementById("newCustomerPhone").value.trim();
 
-        const name = document.getElementById("newCustomerName").value;
-        const phone = document.getElementById("newCustomerPhone").value;
+        if (!name || !phone) {
+            alert("Моля, попълнете име и телефон!");
+            return;
+        }
+
+        // 1. Извличане на CSRF токените от мета таговете на страницата
+        const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
+        const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
 
         fetch("/customers/quick-create", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                [header]: token // 2. Изпращане на CSRF токена към сървъра
             },
             body: JSON.stringify({
                 name: name,
                 phoneNumber: phone
             })
         })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error("Сървърът отхвърли заявката със статус: " + res.status);
+                }
+                return res.json();
+            })
             .then(data => {
-
-                // добавяме новия клиент в dropdown
                 const select = document.getElementById("customerSelect");
-
                 const option = document.createElement("option");
                 option.value = data.id;
                 option.text = data.name + " - " + data.phoneNumber;
 
                 select.appendChild(option);
-
-                // автоматично го избираме
                 select.value = data.id;
 
+                // 3. Сега вече полетата ще се изчистят успешно
+                document.getElementById("newCustomerName").value = "";
+                document.getElementById("newCustomerPhone").value = "";
+
                 closeCustomerModal();
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Възникна грешка при записването на клиента.");
             });
     }
+</script>
+
+<script>
+    function toggleFieldsByCategory(selectElement) {
+        // Намираме текущия ред (tr), в който се намира промененото падащо меню
+        const row = selectElement.closest('.item-row');
+        const selectedValue = selectElement.value;
+
+        // Намираме всички диоптрични колони в този конкретен ред
+        const diopterFields = row.querySelectorAll('.diopter-field');
+
+        // Ако избраната категория е "Стъкла" или "Контактни лещи" -> показваме полетата
+        if (selectedValue === 'LENS' || selectedValue === 'CONTACT_LENS') {
+            diopterFields.forEach(field => field.classList.remove('hidden-field'));
+        } else {
+            // За всички останали категории (Рамка, Слънчеви, Аксесоар) -> скриваме полетата
+            diopterFields.forEach(field => field.classList.add('hidden-field'));
+        }
+    }
+
+    // Подсигуряваме се, че при първоначално зареждане на страницата логиката ще се изпълни
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.category-trigger').forEach(select => {
+            toggleFieldsByCategory(select);
+        });
+    });
+</script>
+
+<script>
+function makeAxisCyclic(input) {
+let value = parseInt(input.value);
+
+if (isNaN(value)) return;
+
+if (value > 180) {
+input.value = 0;
+}
+
+else if (value < 0) {
+input.value = 180;
+}
+}
 </script>
 
 </body>
