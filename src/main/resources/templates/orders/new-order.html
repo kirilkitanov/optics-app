@@ -28,7 +28,6 @@
             <div class="table-container">
 
                 <form th:action="@{/orders/new}" method="POST">
-
                     <!-- CLIENT -->
                     <div class="form-group">
                         <label class="form-label">Клиент *</label>
@@ -51,7 +50,6 @@
                         </div>
                     </div>
 
-                    <!-- TABLE -->
                     <h3 class="section-title">Спецификация</h3>
 
                     <table id="prescriptionTable">
@@ -64,14 +62,12 @@
                             <th>Бранд</th>
                             <th>Модел</th>
                             <th>Диаметър/Размер</th>
-
                             <th>SPH</th>
                             <th>CYL</th>
                             <th>ADD</th>
                             <th>PRISM</th>
                             <th>AXIS</th>
                             <th>BASE</th>
-
                             <th>К-во</th>
                             <th>Цена</th>
                             <th></th>
@@ -80,7 +76,6 @@
 
                         <tbody>
                         <tr class="item-row">
-
                             <!-- CATEGORY -->
                             <td>
                                 <select name="items[0].category" class="status-select category-trigger" onchange="toggleFieldsByCategory(this)">
@@ -91,7 +86,6 @@
                                     <option value="ACCESSORY">Аксесоар</option>
                                 </select>
                             </td>
-
                             <!-- EYE -->
                             <td class="diopter-field">
                                 <select name="items[0].eyeSide" class="status-select">
@@ -100,48 +94,36 @@
                                     <option value="RIGHT">Дясно</option>
                                 </select>
                             </td>
-
                             <!-- BARCODE -->
                             <td>
                                 <input type="text" name="items[0].barcode" class="status-select" placeholder="Сканирай">
                             </td>
-
                             <!-- BRAND -->
                             <td>
-                                <input type="text" name="items[0].brand" class="status-select">
+                                <input type="text" name="items[0].brand" class="status-select" list="brandSuggestions">
                             </td>
-
                             <!-- MODEL -->
                             <td>
-                                <input type="text" name="items[0].model" class="status-select">
+                                <input type="text" name="items[0].model" class="status-select" list="modelSuggestions">
                             </td>
-
                             <!-- SIZE -->
                             <td>
                                 <input type="text" name="items[0].sizeOrDiameter" class="status-select">
                             </td>
-
                             <!-- SPH -->
                             <td class="diopter-field"><input type="number" step="0.25" name="items[0].sph" class="status-select"></td>
-
                             <!-- CYL -->
                             <td class="diopter-field"><input type="number" step="0.25" name="items[0].cyl" class="status-select"></td>
-
                             <!-- ADD -->
                             <td class="diopter-field"><input type="number" step="0.25" name="items[0].addPower" class="status-select"></td>
-
                             <!-- PRISM -->
                             <td class="diopter-field"><input type="number" step="0.1" name="items[0].prism" class="status-select"></td>
-
                             <!-- AXIS -->
                             <td class="diopter-field"><input type="number" name="items[0].axis" class="status-select" oninput="makeAxisCyclic(this)"></td>
-
                             <!-- BASE -->
                             <td class="diopter-field"><input type="text" name="items[0].prismBase" class="status-select"></td>
-
                             <!-- QTY -->
                             <td><input type="number" name="items[0].quantity" value="1" class="status-select"></td>
-
                             <!-- PRICE -->
                             <td><input type="number" step="0.01" name="items[0].priceAtPurchase" class="status-select"></td>
 
@@ -153,7 +135,6 @@
                         </tbody>
 
                     </table>
-
                     <!-- DATALISTS -->
                     <datalist id="brandSuggestions">
                         <option th:each="p : ${products}" th:value="${p.brand}"></option>
@@ -164,23 +145,22 @@
                     </datalist>
 
                     <button type="button" id="addRowBtn" class="btn-new-order">Добави ред</button>
-
                     <!-- TOTALS -->
                     <div class="financial-box">
 
                         <div class="financial-group">
                             <label>Общо</label>
-                            <input type="number" name="totalBeforeDiscount" readonly value="0">
+                            <input type="number" step="0.01" name="totalBeforeDiscount" readonly value="0">
                         </div>
 
                         <div class="financial-group">
                             <label>Отстъпка %</label>
-                            <input type="number" name="discountPercentage" value="0">
+                            <input type="number" step="0.01" name="discountPercentage" value="0">
                         </div>
 
                         <div class="financial-group">
                             <label>Крайна сума</label>
-                            <input type="number" name="total">
+                            <input type="number" step="0.01" name="total">
                         </div>
 
                     </div>
@@ -199,7 +179,6 @@
 
 <script>
     document.getElementById('addRowBtn').addEventListener('click', function () {
-
         let tbody = document.querySelector('#prescriptionTable tbody');
         let rows = tbody.querySelectorAll('.item-row');
         let index = rows.length;
@@ -207,14 +186,17 @@
         let newRow = rows[0].cloneNode(true);
 
         newRow.querySelectorAll('input, select').forEach(el => {
-
             if (el.name) {
                 let field = el.name.split('.').pop();
                 el.name = `items[${index}].${field}`;
             }
 
-            if (el.tagName === 'INPUT') {
-                el.value = '0';
+            if (el.tagName === 'INPUT') { // Корекция: проверка дали полето е за количество, за да не е 0
+                if (el.name.endsWith('.quantity')) {
+                    el.value = '1';
+                } else {
+                    el.value = ''; // Текстовите полета, цената и диоптрите остават празни
+                }
             }
 
             if (el.tagName === 'SELECT') {
@@ -223,6 +205,9 @@
         });
 
         tbody.appendChild(newRow);
+        // Премахваме hidden-field класа, ако първият ред е бил скрит преди клонирането
+        newRow.querySelectorAll('.diopter-field').forEach(field => field.classList.remove('hidden-field'));
+
         toggleFieldsByCategory(newRow.querySelector('.category-trigger'));
         recalcBaseTotal();
     });
@@ -233,7 +218,7 @@
 
         if (rows.length > 1) {
             btn.closest('tr').remove();
-
+            // Преиндексиране на останалите редове
             tbody.querySelectorAll('.item-row').forEach((row, i) => {
                 row.querySelectorAll('input, select').forEach(el => {
                     if (el.name) {
@@ -243,6 +228,8 @@
                 });
             });
             recalcBaseTotal();
+        } else {
+            alert('Формата трябва да съдържа поне един ред!');
         }
     }
 </script>
@@ -259,58 +246,48 @@
     function setDiscount(value) {
         document.querySelector('input[name="discountPercentage"]').value = value.toFixed(2);
     }
-
-    // % -> total
+    // При промяна на % отстъпка -> изчислява Крайна сума
     document.querySelector('input[name="discountPercentage"]').addEventListener('input', function () {
-
         const base = getBaseTotal();
         const discount = parseFloat(this.value || 0);
-
         const total = base - (base * discount / 100);
-
         setTotal(total);
     });
-
-    // total -> %
+    // При промяна на Крайна сума -> изчислява % отстъпка
     document.querySelector('input[name="total"]').addEventListener('input', function () {
-
         const base = getBaseTotal();
         const total = parseFloat(this.value || 0);
 
-        if (base <= 0) return;
+        if (base <= 0) {
+            setDiscount(0);
+            return;
+        }
 
         const discount = ((base - total) / base) * 100;
-
         setDiscount(discount);
     });
-</script>
-
-<script>
+    // Основна функция за преизчисляване на Общата сума
     function recalcBaseTotal() {
-
         let rows = document.querySelectorAll('.item-row');
-        let total = 0;
+        let baseTotal = 0;
 
         rows.forEach(row => {
-
             let qty = parseFloat(row.querySelector('input[name$=".quantity"]')?.value || 0);
             let price = parseFloat(row.querySelector('input[name$=".priceAtPurchase"]')?.value || 0);
-
-            total += qty * price;
+            baseTotal += qty * price;
         });
+        // Записваме сумата преди отстъпка
+        document.querySelector('input[name="totalBeforeDiscount"]').value = baseTotal.toFixed(2);
+        // Фикс против безкраен цикъл: Взимаме текущия процент и преизчисляваме директно
+        const currentDiscount = parseFloat(document.querySelector('input[name="discountPercentage"]').value || 0);
+        const finalTotal = baseTotal - (baseTotal * currentDiscount / 100);
 
-        document.querySelector('input[name="totalBeforeDiscount"]').value = total.toFixed(2);
+        setTotal(finalTotal);
 
-        document.querySelector('input[name="discountPercentage"]').dispatchEvent(new Event('input'));
-        document.querySelector('input[name="total"]').dispatchEvent(new Event('input'));
-
-        return total;
+        return baseTotal;
     }
-</script>
-
-<script>
+    // Слушател за промени в количествата и цените по редовете
     document.addEventListener("input", function (e) {
-
         if (
             e.target.name?.includes("quantity") ||
             e.target.name?.includes("priceAtPurchase")
@@ -358,7 +335,6 @@
             alert("Моля, попълнете име и телефон!");
             return;
         }
-
         // 1. Извличане на CSRF токените от мета таговете на страницата
         const token = document.querySelector("meta[name='_csrf']").getAttribute("content");
         const header = document.querySelector("meta[name='_csrf_header']").getAttribute("content");
@@ -388,7 +364,6 @@
 
                 select.appendChild(option);
                 select.value = data.id;
-
                 // 3. Сега вече полетата ще се изчистят успешно
                 document.getElementById("newCustomerName").value = "";
                 document.getElementById("newCustomerPhone").value = "";
@@ -407,10 +382,8 @@
         // Намираме текущия ред (tr), в който се намира промененото падащо меню
         const row = selectElement.closest('.item-row');
         const selectedValue = selectElement.value;
-
         // Намираме всички диоптрични колони в този конкретен ред
         const diopterFields = row.querySelectorAll('.diopter-field');
-
         // Ако избраната категория е "Стъкла" или "Контактни лещи" -> показваме полетата
         if (selectedValue === 'LENS' || selectedValue === 'CONTACT_LENS') {
             diopterFields.forEach(field => field.classList.remove('hidden-field'));
@@ -419,7 +392,6 @@
             diopterFields.forEach(field => field.classList.add('hidden-field'));
         }
     }
-
     // Подсигуряваме се, че при първоначално зареждане на страницата логиката ще се изпълни
     document.addEventListener("DOMContentLoaded", function() {
         document.querySelectorAll('.category-trigger').forEach(select => {

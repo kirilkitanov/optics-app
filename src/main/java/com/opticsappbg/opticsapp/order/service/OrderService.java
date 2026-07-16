@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -36,9 +38,13 @@ public class OrderService {
         order.setStatus(OrderStatus.CREATED);
         order.setCreatedBy(user);
 
+        String generatedOrderNumber = "ORD-" + LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyMMdd-HHmm"));
+        order.setOrderNumber(generatedOrderNumber);
+
         for (CreateOrderItemRequest itemReq : request.getItems()) {
 
-            Product product = productService.findOrThrow(itemReq);
+            Product product = productService.findOrCreate(itemReq);
 
             OrderItem item = buildItem(itemReq, product);
 
@@ -63,5 +69,9 @@ public class OrderService {
                 .purchasePriceAtPurchase(product.getPurchasePrice())
                 .createdOn(LocalDateTime.now())
                 .build();
+    }
+
+    public List<Order> getAllOrders() {
+        return orderRepository.findAll();
     }
 }

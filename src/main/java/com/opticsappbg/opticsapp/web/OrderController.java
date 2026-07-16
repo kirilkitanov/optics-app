@@ -2,6 +2,7 @@ package com.opticsappbg.opticsapp.web;
 
 import com.opticsappbg.opticsapp.customer.service.CustomerService;
 import com.opticsappbg.opticsapp.order.service.OrderService;
+import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.security.AuthenticationDetails;
 import com.opticsappbg.opticsapp.user.model.User;
 import com.opticsappbg.opticsapp.user.service.UserService;
@@ -20,12 +21,14 @@ public class OrderController {
     private final OrderService orderService;
     private final CustomerService customerService;
     private final UserService userService;
+    private final ProductService productService;
 
     // 🔹 SHOW FORM
     @GetMapping("/new")
     public String showCreateOrderForm(Model model) {
 
         model.addAttribute("customers", customerService.getAllCustomers());
+        model.addAttribute("products", productService.getAllProducts());
         model.addAttribute("createOrderRequest", new CreateOrderRequest());
 
         return "orders/new-order";
@@ -43,4 +46,12 @@ public class OrderController {
 
         return "redirect:/orders";
     }
+
+    @GetMapping
+    public String showOrdersList(Model model) {
+
+        model.addAttribute("orders", orderService.getAllOrders());
+        return "orders/orders-list";
+    }
+
 }
