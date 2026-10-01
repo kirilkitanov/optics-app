@@ -3,6 +3,7 @@ package com.opticsappbg.opticsapp.web.dto;
 
 import com.opticsappbg.opticsapp.order.model.EyeSide;
 import com.opticsappbg.opticsapp.product.model.ProductCategory;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -37,5 +38,6 @@ public class CreateOrderItemRequest {
 
     private Integer quantity;
 
+    @NotNull
     private BigDecimal priceAtPurchase;
 }

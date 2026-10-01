@@ -36,10 +36,9 @@
                     <tr th:each="order : ${orders}">
                         <td th:text="${order.orderNumber}" style="font-weight: bold;"></td>
                         <td th:text="${order.customer.fullName}"></td>
-                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy HH:mm')}"></td>                        <
+                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy HH:mm')}"></td>
                         <td th:text="${#numbers.formatDecimal(order.total, 1, 'COMMA', 2, 'POINT') + ' EUR.'}"></td>
                         <td>
-                            <
                             <form th:action="@{/orders/{id}/update-status(id=${order.id})}" method="POST" style="margin:0;">
                                 <select name="status" class="status-select" onchange="this.form.submit()" style="padding: 4px 8px;">
                                     <option th:each="statusOpt : ${T(com.opticsappbg.opticsapp.order.model.OrderStatus).values()}"

@@ -96,15 +96,15 @@
                             </td>
                             <!-- BARCODE -->
                             <td>
-                                <input type="text" name="items[0].barcode" class="status-select" placeholder="Сканирай">
+                                <input type="text" name="items[0].barcode" class="status-select barcode-input" placeholder="Сканирай" oninput="autoFillByBarcode(this)">
                             </td>
                             <!-- BRAND -->
                             <td>
-                                <input type="text" name="items[0].brand" class="status-select" list="brandSuggestions">
+                                <input type="text" name="items[0].brand" class="status-select brand-input" list="brandSuggestions">
                             </td>
                             <!-- MODEL -->
                             <td>
-                                <input type="text" name="items[0].model" class="status-select" list="modelSuggestions">
+                                <input type="text" name="items[0].model" class="status-select model-input" list="modelSuggestions" onfocus="filterModelsForCurrentRow(this)">
                             </td>
                             <!-- SIZE -->
                             <td>
@@ -125,7 +125,7 @@
                             <!-- QTY -->
                             <td><input type="number" name="items[0].quantity" value="1" class="status-select"></td>
                             <!-- PRICE -->
-                            <td><input type="number" step="0.01" name="items[0].priceAtPurchase" class="status-select"></td>
+                            <td><input type="number" step="0.01" name="items[0].priceAtPurchase" class="status-select" required></td>
 
                             <td>
                                 <button type="button" onclick="removeRow(this)" class="btn-open">X</button>
@@ -137,11 +137,10 @@
                     </table>
                     <!-- DATALISTS -->
                     <datalist id="brandSuggestions">
-                        <option th:each="p : ${products}" th:value="${p.brand}"></option>
+                        <option th:each="b : ${brands}" th:value="${b}"></option>
                     </datalist>
 
                     <datalist id="modelSuggestions">
-                        <option th:each="p : ${products}" th:value="${p.model}"></option>
                     </datalist>
 
                     <button type="button" id="addRowBtn" class="btn-new-order">Добави ред</button>
@@ -415,6 +414,76 @@ input.value = 180;
 }
 }
 </script>
+
+<script th:inline="javascript">
+    const allProducts = /*[[${products}]]*/ [];
+
+    function filterModelsForCurrentRow(modelInput) {
+        const currentRow = modelInput.closest('.item-row');
+        const brandInput = currentRow.querySelector('.brand-input');
+        const selectedBrand = brandInput ? brandInput.value.trim().toLowerCase() : '';
+        const modelDatalist = document.getElementById('modelSuggestions');
+
+        modelDatalist.innerHTML = '';
+
+        if (!selectedBrand) return;
+
+        const uniqueModels = new Set();
+
+        allProducts.forEach(product => {
+            if (product.brand && product.brand.toLowerCase() === selectedBrand) {
+                if (product.model && !uniqueModels.has(product.model.toLowerCase())) {
+                    uniqueModels.add(product.model.toLowerCase());
+
+                    const option = document.createElement('option');
+                    option.value = product.model;
+                    modelDatalist.appendChild(option);
+                }
+            }
+        });
+    }
+
+    function autoFillByBarcode(barcodeInput) {
+        const barcodeValue = barcodeInput.value.trim();
+        if (!barcodeValue) return;
+
+        // 1. Търсим продукт с такъв баркод в масива
+        const foundProduct = allProducts.find(p => p.barcode && p.barcode.trim() === barcodeValue);
+
+        // 2. Ако намерим съвпадение, попълваме останалите полета на същия ред
+        if (foundProduct) {
+            const currentRow = barcodeInput.closest('.item-row');
+
+            // Попълваме текстовите полета
+            if (foundProduct.brand) currentRow.querySelector('input[name$=".brand"]').value = foundProduct.brand;
+            if (foundProduct.model) currentRow.querySelector('input[name$=".model"]').value = foundProduct.model;
+            if (foundProduct.sizeOrDiameter) currentRow.querySelector('input[name$=".sizeOrDiameter"]').value = foundProduct.sizeOrDiameter;
+
+            // Попълваме диоптрите безопасно (ако съществуват за продукта)
+            if (foundProduct.sph !== null) currentRow.querySelector('input[name$=".sph"]').value = foundProduct.sph;
+            if (foundProduct.cyl !== null) currentRow.querySelector('input[name$=".cyl"]').value = foundProduct.cyl;
+            if (foundProduct.addPower !== null) currentRow.querySelector('input[name$=".addPower"]').value = foundProduct.addPower;
+            if (foundProduct.prism !== null) currentRow.querySelector('input[name$=".prism"]').value = foundProduct.prism;
+
+            // Попълваме цената
+            if (foundProduct.retailPrice !== null) {
+                const priceInput = currentRow.querySelector('input[name$=".priceAtPurchase"]');
+                priceInput.value = foundProduct.retailPrice;
+
+                // Провокираме преизчисляване на тоталите, понеже цената се промени динамично
+                recalcBaseTotal();
+            }
+
+            // Автоматично сменяме категорията в падащото меню, ако съвпада
+            if (foundProduct.category) {
+                const categorySelect = currentRow.querySelector('.category-trigger');
+                categorySelect.value = foundProduct.category;
+                toggleFieldsByCategory(categorySelect); // Задействаме скриването/показването на диоптрите спрямо категорията
+            }
+        }
+    }
+</script>
+
 
 </body>
 </html>

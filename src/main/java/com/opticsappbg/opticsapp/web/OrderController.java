@@ -12,6 +12,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 
 @Controller
 @RequestMapping("/orders")
@@ -29,6 +31,7 @@ public class OrderController {
 
         model.addAttribute("customers", customerService.getAllCustomers());
         model.addAttribute("products", productService.getAllProducts());
+        model.addAttribute("brands", productService.getUniqueBrandNames());
         model.addAttribute("createOrderRequest", new CreateOrderRequest());
 
         return "orders/new-order";
@@ -38,9 +41,18 @@ public class OrderController {
     @PostMapping("/new")
     public String createOrder(
             @AuthenticationPrincipal AuthenticationDetails principal,
-            @ModelAttribute CreateOrderRequest request) {
+            @Valid @ModelAttribute("createOrderRequest") CreateOrderRequest request,
+            BindingResult bindingResult,
+            Model model){
 
-        User user = userService.getById(principal.getUserId());
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("customers", customerService.getAllCustomers());
+            model.addAttribute("products", productService.getAllProducts());
+            model.addAttribute("brands", productService.getUniqueBrandNames());
+            return "orders/new-order";
+        }
+
+            User user = userService.getById(principal.getUserId());
 
         orderService.createOrder(request, user);
 
