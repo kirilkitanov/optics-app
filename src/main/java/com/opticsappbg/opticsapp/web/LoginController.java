@@ -10,15 +10,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
+import com.opticsappbg.opticsapp.order.service.OrderService;
 
 @Controller
 public class LoginController {
 
     private final UserService userService;
+    private final OrderService orderService;
 
     @Autowired
-    public LoginController(UserService userService) {
+    public LoginController(UserService userService, OrderService orderService) {
         this.userService = userService;
+        this.orderService = orderService;
     }
 
     // При стартиране и достъп до началния адрес "/" директно пренасочваме към "/login"
@@ -49,6 +52,7 @@ public class LoginController {
         ModelAndView modelAndView = new ModelAndView();
         modelAndView.setViewName("index");
         modelAndView.addObject("user", user);
+        modelAndView.addObject("orders", orderService.getActiveOrders());
 
         return modelAndView;
     }

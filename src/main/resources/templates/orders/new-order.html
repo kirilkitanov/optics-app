@@ -21,13 +21,17 @@
         <section class="content">
 
             <div class="content-header">
-                <h1 class="page-title-blue">Нова поръчка</h1>
+                <h1 class="page-title-blue"
+                    th:text="${order != null ? 'Редакция на поръчка ' + order.orderNumber : 'Нова поръчка'}">
+                    Нова поръчка
+                </h1>
                 <a th:href="@{/orders}" class="btn-new-order">Назад</a>
             </div>
 
             <div class="table-container">
 
-                <form th:action="@{/orders/new}" method="POST">
+                <form th:action="${order != null} ? @{/orders/{id}/edit(id=${order.id})} : @{/orders/new}"
+                      method="POST">
                     <!-- CLIENT -->
                     <div class="form-group">
                         <label class="form-label">Клиент *</label>
@@ -39,7 +43,8 @@
 
                                 <option th:each="c : ${customers}"
                                         th:value="${c.id}"
-                                        th:text="${c.fullName + ' - ' + c.phone}">
+                                        th:text="${c.fullName + ' - ' + c.phone}"
+                                        th:selected="${createOrderRequest.customerId == c.id}">
                                 </option>
                             </select>
 
@@ -52,89 +57,201 @@
 
                     <h3 class="section-title">Спецификация</h3>
 
-                    <table id="prescriptionTable">
+                    <div id="prescriptionItems">
 
-                        <thead>
-                        <tr>
-                            <th>Категория</th>
-                            <th>Око</th>
-                            <th>Баркод</th>
-                            <th>Бранд</th>
-                            <th>Модел</th>
-                            <th>Диаметър/Размер</th>
-                            <th>SPH</th>
-                            <th>CYL</th>
-                            <th>ADD</th>
-                            <th>PRISM</th>
-                            <th>AXIS</th>
-                            <th>BASE</th>
-                            <th>К-во</th>
-                            <th>Цена</th>
-                            <th></th>
-                        </tr>
-                        </thead>
+                        <div class="item-row"
+                             th:each="item, itemStat : ${createOrderRequest.items}">
 
-                        <tbody>
-                        <tr class="item-row">
-                            <!-- CATEGORY -->
-                            <td>
-                                <select name="items[0].category" class="status-select category-trigger" onchange="toggleFieldsByCategory(this)">
-                                    <option value="LENS">Стъкла</option>
-                                    <option value="FRAME">Рамка</option>
-                                    <option value="SUNGLASSES">Слънчеви</option>
-                                    <option value="CONTACT_LENS">Контактни лещи</option>
-                                    <option value="ACCESSORY">Аксесоар</option>
-                                </select>
-                            </td>
-                            <!-- EYE -->
-                            <td class="diopter-field">
-                                <select name="items[0].eyeSide" class="status-select">
-                                    <option value="NONE">--</option>
-                                    <option value="LEFT">Ляво</option>
-                                    <option value="RIGHT">Дясно</option>
-                                </select>
-                            </td>
-                            <!-- BARCODE -->
-                            <td>
-                                <input type="text" name="items[0].barcode" class="status-select barcode-input" placeholder="Сканирай" oninput="autoFillByBarcode(this)">
-                            </td>
-                            <!-- BRAND -->
-                            <td>
-                                <input type="text" name="items[0].brand" class="status-select brand-input" list="brandSuggestions">
-                            </td>
-                            <!-- MODEL -->
-                            <td>
-                                <input type="text" name="items[0].model" class="status-select model-input" list="modelSuggestions" onfocus="filterModelsForCurrentRow(this)">
-                            </td>
-                            <!-- SIZE -->
-                            <td>
-                                <input type="text" name="items[0].sizeOrDiameter" class="status-select">
-                            </td>
-                            <!-- SPH -->
-                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].sph" class="status-select"></td>
-                            <!-- CYL -->
-                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].cyl" class="status-select"></td>
-                            <!-- ADD -->
-                            <td class="diopter-field"><input type="number" step="0.25" name="items[0].addPower" class="status-select"></td>
-                            <!-- PRISM -->
-                            <td class="diopter-field"><input type="number" step="0.1" name="items[0].prism" class="status-select"></td>
-                            <!-- AXIS -->
-                            <td class="diopter-field"><input type="number" name="items[0].axis" class="status-select" oninput="makeAxisCyclic(this)"></td>
-                            <!-- BASE -->
-                            <td class="diopter-field"><input type="text" name="items[0].prismBase" class="status-select"></td>
-                            <!-- QTY -->
-                            <td><input type="number" name="items[0].quantity" value="1" class="status-select"></td>
-                            <!-- PRICE -->
-                            <td><input type="number" step="0.01" name="items[0].priceAtPurchase" class="status-select" required></td>
+                            <div class="item-header">
+                                <strong>Продукт 1</strong>
+                            </div>
 
-                            <td>
-                                <button type="button" onclick="removeRow(this)" class="btn-open">X</button>
-                            </td>
+                            <!-- ОСНОВНИ ДАННИ -->
+                            <div class="item-fields">
 
-                        </tr>
-                        </tbody>
+                                <div class="item-field">
+                                    <label>Категория</label>
+                                    <select th:name="'items[' + ${itemStat.index} + '].category'"
+                                            class="status-select category-trigger"
+                                            onchange="toggleFieldsByCategory(this)">
+                                        <option value="LENS"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).LENS}">
+                                            Стъкла
+                                        </option>
+                                        <option value="FRAME"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).FRAME}">
+                                            Рамка
+                                        </option>
+                                        <option value="SUNGLASSES"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).SUNGLASSES}">
+                                            Слънчеви
+                                        </option>
+                                        <option value="CONTACT_LENS"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).CONTACT_LENS}">
+                                            Контактни лещи
+                                        </option>
+                                        <option value="ACCESSORY"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).ACCESSORY}">
+                                            Аксесоар
+                                        </option>
+                                    </select>
+                                </div>
 
-                    </table>
+                                <div class="item-field">
+                                    <label>Баркод</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].barcode'"
+                                           th:value="${item.barcode}"
+                                           class="status-select barcode-input"
+                                           placeholder="Сканирай"
+                                           oninput="autoFillByBarcode(this)">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Бранд</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].brand'"
+                                           th:value="${item.brand}"
+                                           class="status-select brand-input"
+                                           list="brandSuggestions"
+                                           oninput="updateModelsForCurrentRow(this)">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Модел</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].model'"
+                                           th:value="${item.model}"
+                                           class="status-select model-input"
+                                           list="modelSuggestions"
+                                           onfocus="filterModelsForCurrentRow(this)">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Диаметър / Размер</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
+                                           th:value="${item.sizeOrDiameter}"
+                                           class="status-select">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Количество</label>
+                                    <input type="number"
+                                           th:name="'items[' + ${itemStat.index} + '].quantity'"
+                                           th:value="${item.quantity}"
+                                           class="status-select">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Цена</label>
+                                    <input type="number"
+                                           step="0.01"
+                                           th:name="'items[' + ${itemStat.index} + '].priceAtPurchase'"
+                                           th:value="${item.priceAtPurchase}"
+                                           class="status-select"
+                                           required>
+                                </div>
+
+                            </div>
+
+                            <!-- ПАРАМЕТРИ НА СТЪКЛОТО -->
+                            <div class="diopter-section">
+
+                                <div class="diopter-title">
+                                    Параметри
+                                </div>
+
+                                <div class="item-fields">
+
+                                    <div class="item-field">
+                                        <label>Око</label>
+                                        <select th:name="'items[' + ${itemStat.index} + '].eyeSide'"
+                                                class="status-select">
+                                            <option value="NONE"
+                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).NONE}">
+                                                --
+                                            </option>
+                                            <option value="LEFT"
+                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).LEFT}">
+                                                Ляво
+                                            </option>
+                                            <option value="RIGHT"
+                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).RIGHT}">
+                                                Дясно
+                                            </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>SPH</label>
+                                        <input type="number"
+                                               step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].sph'"
+                                               th:value="${item.sph}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>CYL</label>
+                                        <input type="number"
+                                               step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].cyl'"
+                                               th:value="${item.cyl}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>ADD</label>
+                                        <input type="number"
+                                               step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].addPower'"
+                                               th:value="${item.addPower}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>PRISM</label>
+                                        <input type="number"
+                                               step="0.1"
+                                               th:name="'items[' + ${itemStat.index} + '].prism'"
+                                               th:value="${item.prism}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>AXIS</label>
+                                        <input type="number"
+                                               th:name="'items[' + ${itemStat.index} + '].axis'"
+                                               th:value="${item.axis}"
+                                               class="status-select"
+                                               oninput="makeAxisCyclic(this)">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>BASE</label>
+                                        <input type="text"
+                                               th:name="'items[' + ${itemStat.index} + '].prismBase'"
+                                               th:value="${item.prismBase}"
+                                               class="status-select">
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="item-actions">
+                                <button type="button"
+                                        onclick="removeRow(this)"
+                                        class="btn-open">
+                                    Премахни
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </div>
+
                     <!-- DATALISTS -->
                     <datalist id="brandSuggestions">
                         <option th:each="b : ${brands}" th:value="${b}"></option>
@@ -178,23 +295,26 @@
 
 <script>
     document.getElementById('addRowBtn').addEventListener('click', function () {
-        let tbody = document.querySelector('#prescriptionTable tbody');
-        let rows = tbody.querySelectorAll('.item-row');
-        let index = rows.length;
 
-        let newRow = rows[0].cloneNode(true);
+        const container = document.getElementById('prescriptionItems');
+        const rows = container.querySelectorAll('.item-row');
+        const index = rows.length;
+
+        const newRow = rows[0].cloneNode(true);
 
         newRow.querySelectorAll('input, select').forEach(el => {
+
             if (el.name) {
-                let field = el.name.split('.').pop();
+                const field = el.name.split('.').pop();
                 el.name = `items[${index}].${field}`;
             }
 
-            if (el.tagName === 'INPUT') { // Корекция: проверка дали полето е за количество, за да не е 0
+            if (el.tagName === 'INPUT') {
+
                 if (el.name.endsWith('.quantity')) {
                     el.value = '1';
                 } else {
-                    el.value = ''; // Текстовите полета, цената и диоптрите остават празни
+                    el.value = '';
                 }
             }
 
@@ -203,32 +323,49 @@
             }
         });
 
-        tbody.appendChild(newRow);
-        // Премахваме hidden-field класа, ако първият ред е бил скрит преди клонирането
-        newRow.querySelectorAll('.diopter-field').forEach(field => field.classList.remove('hidden-field'));
+        newRow.querySelector('.item-header strong').textContent =
+            `Продукт ${index + 1}`;
 
-        toggleFieldsByCategory(newRow.querySelector('.category-trigger'));
+        container.appendChild(newRow);
+
+        toggleFieldsByCategory(
+            newRow.querySelector('.category-trigger')
+        );
+
         recalcBaseTotal();
     });
 
+
     function removeRow(btn) {
-        let tbody = document.querySelector('#prescriptionTable tbody');
-        let rows = tbody.querySelectorAll('.item-row');
+
+        const container = document.getElementById('prescriptionItems');
+        const rows = container.querySelectorAll('.item-row');
 
         if (rows.length > 1) {
-            btn.closest('tr').remove();
-            // Преиндексиране на останалите редове
-            tbody.querySelectorAll('.item-row').forEach((row, i) => {
+
+            btn.closest('.item-row').remove();
+
+            // Преиндексиране
+            container.querySelectorAll('.item-row').forEach((row, i) => {
+
+                row.querySelector('.item-header strong').textContent =
+                    `Продукт ${i + 1}`;
+
                 row.querySelectorAll('input, select').forEach(el => {
+
                     if (el.name) {
-                        let field = el.name.split('.').pop();
+                        const field = el.name.split('.').pop();
                         el.name = `items[${i}].${field}`;
                     }
+
                 });
             });
+
             recalcBaseTotal();
+
         } else {
-            alert('Формата трябва да съдържа поне един ред!');
+
+            alert('Формата трябва да съдържа поне един продукт!');
         }
     }
 </script>
@@ -245,6 +382,7 @@
     function setDiscount(value) {
         document.querySelector('input[name="discountPercentage"]').value = value.toFixed(2);
     }
+
     // При промяна на % отстъпка -> изчислява Крайна сума
     document.querySelector('input[name="discountPercentage"]').addEventListener('input', function () {
         const base = getBaseTotal();
@@ -265,6 +403,7 @@
         const discount = ((base - total) / base) * 100;
         setDiscount(discount);
     });
+
     // Основна функция за преизчисляване на Общата сума
     function recalcBaseTotal() {
         let rows = document.querySelectorAll('.item-row');
@@ -285,6 +424,9 @@
 
         return baseTotal;
     }
+    document.addEventListener("DOMContentLoaded", function () {
+        recalcBaseTotal();
+    });
     // Слушател за промени в количествата и цените по редовете
     document.addEventListener("input", function (e) {
         if (
@@ -378,21 +520,19 @@
 
 <script>
     function toggleFieldsByCategory(selectElement) {
-        // Намираме текущия ред (tr), в който се намира промененото падащо меню
         const row = selectElement.closest('.item-row');
         const selectedValue = selectElement.value;
-        // Намираме всички диоптрични колони в този конкретен ред
-        const diopterFields = row.querySelectorAll('.diopter-field');
-        // Ако избраната категория е "Стъкла" или "Контактни лещи" -> показваме полетата
+
+        const diopterSection = row.querySelector('.diopter-section');
+
         if (selectedValue === 'LENS' || selectedValue === 'CONTACT_LENS') {
-            diopterFields.forEach(field => field.classList.remove('hidden-field'));
+            diopterSection.classList.remove('hidden-field');
         } else {
-            // За всички останали категории (Рамка, Слънчеви, Аксесоар) -> скриваме полетата
-            diopterFields.forEach(field => field.classList.add('hidden-field'));
+            diopterSection.classList.add('hidden-field');
         }
     }
-    // Подсигуряваме се, че при първоначално зареждане на страницата логиката ще се изпълни
-    document.addEventListener("DOMContentLoaded", function() {
+
+    document.addEventListener("DOMContentLoaded", function () {
         document.querySelectorAll('.category-trigger').forEach(select => {
             toggleFieldsByCategory(select);
         });
@@ -400,23 +540,32 @@
 </script>
 
 <script>
-function makeAxisCyclic(input) {
-let value = parseInt(input.value);
+    function makeAxisCyclic(input) {
+        let value = parseInt(input.value);
 
-if (isNaN(value)) return;
+        if (isNaN(value)) return;
 
-if (value > 180) {
-input.value = 0;
-}
-
-else if (value < 0) {
-input.value = 180;
-}
-}
+        if (value > 180) {
+            input.value = 0;
+        } else if (value < 0) {
+            input.value = 180;
+        }
+    }
 </script>
 
 <script th:inline="javascript">
-    const allProducts = /*[[${products}]]*/ [];
+    console.log("MODEL SCRIPT LOADED");
+
+    const brandModelPairs = /*[[${brandModelPairs}]]*/ [];
+
+    function updateModelsForCurrentRow(brandInput) {
+        const currentRow = brandInput.closest('.item-row');
+        const modelInput = currentRow.querySelector('.model-input');
+
+        if (modelInput) {
+            filterModelsForCurrentRow(modelInput);
+        }
+    }
 
     function filterModelsForCurrentRow(modelInput) {
         const currentRow = modelInput.closest('.item-row');
@@ -430,19 +579,21 @@ input.value = 180;
 
         const uniqueModels = new Set();
 
-        allProducts.forEach(product => {
-            if (product.brand && product.brand.toLowerCase() === selectedBrand) {
-                if (product.model && !uniqueModels.has(product.model.toLowerCase())) {
-                    uniqueModels.add(product.model.toLowerCase());
+        brandModelPairs.forEach(pair => {
+            const brand = pair[0];
+            const model = pair[1];
+
+            if (brand && brand.toLowerCase() === selectedBrand) {
+                if (model && !uniqueModels.has(model.toLowerCase())) {
+                    uniqueModels.add(model.toLowerCase());
 
                     const option = document.createElement('option');
-                    option.value = product.model;
+                    option.value = model;
                     modelDatalist.appendChild(option);
                 }
             }
         });
     }
-
     function autoFillByBarcode(barcodeInput) {
         const barcodeValue = barcodeInput.value.trim();
         if (!barcodeValue) return;

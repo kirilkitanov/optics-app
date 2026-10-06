@@ -57,7 +57,7 @@ body {
     color: white;
     border: none;
     padding: 6px 14px;
-    border-radius: 8px; /* Заоблен напълно */
+    border-radius: 6px; /* Заоблен напълно */
     cursor: pointer;
     font-weight: bold;
     font-size: 13px;
@@ -163,8 +163,8 @@ body {
     background-color: #ff8c00;
     color: white;
     text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: 8px 8px;
+    border-radius: 6px;
     font-size: 14px;
     font-weight: normal;
     white-space: nowrap;
@@ -374,85 +374,158 @@ button[type="submit"].btn-new-order {
     display: inline-block;
 }
 
-/* Оптимизация на таблицата и нейните input полета за екрани */
-#prescriptionTable input.status-select,
-#prescriptionTable select.status-select {
+/* ==========================================================================
+   СПЕЦИФИКАЦИЯ НА ПРОДУКТИТЕ - НОВА ПОДРЕДБА
+   ========================================================================== */
+
+#prescriptionItems {
     width: 100%;
-    min-width: 65px; /* Предотвратява разтягането на колоните */
-    height: 32px;
-    padding: 4px 6px;
 }
 
-/* Премахване на хоризонталния скрол чрез трансформиране на таблицата на малки/средни екрани */
-@media (max-width: 1400px) {
-    #prescriptionTable,
-    #prescriptionTable thead,
-    #prescriptionTable tbody,
-    #prescriptionTable tr,
-    #prescriptionTable td {
-        display: block;
-    }
+.item-row {
+    background: #ffffff;
+    border: 1px solid #dfe4e8;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
 
-    /* Скриваме заглавията на таблицата, защото ще ги вградим в самите полета */
-    #prescriptionTable thead {
-        display: none;
-    }
+.item-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eeeeee;
+}
 
-    #prescriptionTable .item-row {
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
+.item-header strong {
+    color: #1f4e79;
+    font-size: 16px;
+}
+
+.item-fields {
+    display: grid;
+    grid-template-columns:
+        130px
+        130px
+        minmax(140px, 1.2fr)
+        minmax(140px, 1.2fr)
+        100px
+        80px
+        110px;
+    gap: 12px;
+    align-items: end;
+}
+
+.item-field {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.item-field label {
+    display: block;
+    margin-bottom: 5px;
+    color: #1f4e79;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.item-field .status-select {
+    width: 100%;
+    height: 36px;
+    padding: 6px 8px;
+}
+
+/* Компактни полета за количество и цена */
+.item-row input[name$=".quantity"] {
+    width: 80px;
+    max-width: 80px;
+}
+
+.item-row input[name$=".priceAtPurchase"] {
+    width: 110px;
+    max-width: 110px;
+}
+
+.item-field input.status-select,
+.item-field select.status-select {
+    width: 100%;
+}
+
+.diopter-section {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eeeeee;
+}
+
+.diopter-section .item-fields {
+    grid-template-columns: repeat(7, minmax(70px, 100px));
+    gap: 12px;
+}
+
+.diopter-section .item-field .status-select {
+    padding: 6px 6px;
+    font-size: 13px;
+}
+
+.diopter-title {
+    color: #1f4e79;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.item-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 18px;
+    padding-top: 12px;
+    border-top: 1px dashed #eeeeee;
+}
+
+.item-actions .btn-open {
+    background-color: #dc3545;
+    padding: 7px 16px;
+}
+
+.item-actions .btn-open:hover {
+    background-color: #bd2130;
+}
+
+/* Скритите секции не заемат място */
+.hidden-field {
+    display: none !important;
+}
+
+
+/* ==========================================================================
+   АДАПТИВНОСТ НА ПРОДУКТОВИТЕ
+   ========================================================================== */
+
+@media (max-width: 1200px) {
+
+    .item-fields {
+        grid-template-columns: repeat(3, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+
+    .item-fields {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+
+    .item-row {
         padding: 15px;
-        margin-bottom: 20px;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
     }
 
-    #prescriptionTable td {
-        border: none;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-    }
-
-    /* Автоматично добавяне на етикети над всяко поле в мобилен изглед, използвайки data-атрибути или ред на полето */
-    #prescriptionTable td::before {
-        font-size: 11px;
-        font-weight: bold;
-        color: #1f4e79;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-    }
-
-    /* Дефиниране на етикети според поредността на колоните */
-    #prescriptionTable td:nth-child(1)::before { content: "Категория"; }
-    #prescriptionTable td:nth-child(2)::before { content: "Око"; }
-    #prescriptionTable td:nth-child(3)::before { content: "Баркод"; }
-    #prescriptionTable td:nth-child(4)::before { content: "Бранд"; }
-    #prescriptionTable td:nth-child(5)::before { content: "Модел"; }
-    #prescriptionTable td:nth-child(6)::before { content: "Размер / Диаметър"; }
-    #prescriptionTable td:nth-child(7)::before { content: "SPH"; }
-    #prescriptionTable td:nth-child(8)::before { content: "CYL"; }
-    #prescriptionTable td:nth-child(9)::before { content: "ADD"; }
-    #prescriptionTable td:nth-child(10)::before { content: "PRISM"; }
-    #prescriptionTable td:nth-child(11)::before { content: "AXIS"; }
-    #prescriptionTable td:nth-child(12)::before { content: "BASE"; }
-    #prescriptionTable td:nth-child(13)::before { content: "К-во"; }
-    #prescriptionTable td:nth-child(14)::before { content: "Цена"; }
-
-    /* Специално позициониране за бутона за изтриване (Х) на реда */
-    #prescriptionTable td:last-child {
-        grid-column: 1 / -1;
-        align-items: flex-end;
-        margin-top: 5px;
-        border-top: 1px dashed #eeeeee;
-        padding-top: 10px;
-    }
-
-    #prescriptionTable td:last-child::before {
-        display: none;
+    .item-fields {
+        grid-template-columns: 1fr;
     }
 }
 

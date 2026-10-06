@@ -45,7 +45,7 @@ public class OrderItem {
 
     @Column(name = "purchase_price_at_purchase", nullable = false)
     private BigDecimal purchasePriceAtPurchase; // За доставната цена и маржа,
-                                               // копие от склада (за да не се променя историята)
+    // копие от склада (за да не се променя историята)
 
     @Column(name = "price_at_purchase", nullable = false)
     private BigDecimal priceAtPurchase; // ЗАМРАЗЕНАТА ЦЕНА реалната продажна цена в момента

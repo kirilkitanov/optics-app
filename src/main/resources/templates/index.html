@@ -36,34 +36,50 @@
                         <th>Номер</th>
                         <th>Клиент</th>
                         <th>Телефон</th>
-                        <th>Дължима сума</th>
+                        <th>Сума</th>
                         <th>Статус</th>
                         <th>Промяна на статус</th>
-                        <th>Действия</th>
+                        <th>Редакция</th>
                     </tr>
                     </thead>
 
                     <tbody>
                     <tr th:each="order : ${orders}">
-                        <td th:text="${#temporals.format(order.date, 'dd.MM.yyyy')}"></td>
-                        <td th:text="${order.id}"></td>
-                        <td th:text="${order.customerName}"></td>
-                        <td th:text="${order.phone}"></td>
-                        <td th:text="${order.amountDue > 0} ? ${order.amountDue} + ' лв.' : 'Платено'"></td>
-                        <td th:text="${order.status}"></td>
+                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy HH:mm')}"></td>
+
+                        <td th:text="${order.orderNumber}"></td>
+
+                        <td th:text="${order.customer.fullName}"></td>
+
+                        <td th:text="${order.customer.phone}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(order.total, 1, 'COMMA', 2, 'POINT') + ' EUR.'}"></td>
+
+                        <td th:text="${order.status.displayName}"></td>
 
                         <td>
-                            <form th:action="@{/orders/update-status/{id}(id=${order.id})}" method="post">
-                                <select name="status" class="status-select" onchange="this.form.submit()">
-                                    <option value="ЧАКА СТЪКЛА">ЧАКА СТЪКЛА</option>
-                                    <option value="ГОТОВА ЗА ВЗИМАНЕ">ГОТОВА ЗА ВЗИМАНЕ</option>
-                                    <option value="ВЗЕТА">ВЗЕТА</option>
+                            <form th:action="@{/orders/{id}/update-status(id=${order.id})}"
+                                  method="post">
+
+                                <select name="status"
+                                        class="status-select"
+                                        onchange="this.form.submit()">
+
+                                    <option th:each="statusOpt : ${T(com.opticsappbg.opticsapp.order.model.OrderStatus).values()}"
+                                            th:value="${statusOpt}"
+                                            th:text="${statusOpt.displayName}"
+                                            th:selected="${statusOpt == order.status}">
+                                    </option>
+
                                 </select>
                             </form>
                         </td>
 
                         <td>
-                            <button class="btn-open">Отвори</button>
+                            <a th:href="@{/orders/{id}/edit(id=${order.id})}"
+                               class="btn-new-order">
+                                Редакция
+                            </a>
                         </td>
                     </tr>
                     </tbody>
