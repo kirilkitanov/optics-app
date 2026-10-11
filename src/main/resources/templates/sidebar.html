@@ -5,14 +5,52 @@
         <img th:src="@{/images/logo.png}" alt="Лого" class="sidebar-logo-img" id="sidebarLogoImg">
     </div>
 
+<!--    <nav>-->
+<!--        <a th:href="@{/home}" class="active">Начало</a>-->
+<!--        <a th:href="@{/products}">Продукти</a>-->
+<!--        <a th:href="@{/customers}">Клиенти</a>-->
+<!--        <a th:href="@{/orders}">Поръчки</a>-->
+<!--        <a th:href="@{/deliveries}">Доставки</a>-->
+<!--        <a th:href="@{/reports}">Справки</a>-->
+<!--        <a th:href="@{/system}">Система</a>-->
+<!--    </nav>-->
+
+
     <nav>
-        <a th:href="@{/home}" class="active">Начало</a>
-        <a th:href="@{/products}">Продукти</a>
-        <a th:href="@{/customers}">Клиенти</a>
-        <a th:href="@{/orders}">Поръчки</a>
-        <a th:href="@{/deliveries}">Доставки</a>
-        <a th:href="@{/reports}">Справки</a>
-        <a th:href="@{/system}">Система</a>
+        <a th:href="@{/home}"
+           th:classappend="${activeSection == 'home'} ? ' active' : ''">
+            Начало
+        </a>
+
+        <a th:href="@{/products}"
+           th:classappend="${activeSection == 'products'} ? ' active' : ''">
+            Продукти
+        </a>
+
+        <a th:href="@{/customers}"
+           th:classappend="${activeSection == 'customers'} ? ' active' : ''">
+            Клиенти
+        </a>
+
+        <a th:href="@{/orders}"
+           th:classappend="${activeSection == 'orders'} ? ' active' : ''">
+            Поръчки
+        </a>
+
+        <a th:href="@{/deliveries}"
+           th:classappend="${activeSection == 'deliveries'} ? ' active' : ''">
+            Доставки
+        </a>
+
+        <a th:href="@{/reports}"
+           th:classappend="${activeSection == 'reports'} ? ' active' : ''">
+            Справки
+        </a>
+
+        <a th:href="@{/system}"
+           th:classappend="${activeSection == 'system'} ? ' active' : ''">
+            Система
+        </a>
     </nav>
 
 

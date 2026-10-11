@@ -37,6 +37,7 @@ public class OrderService {
         order.setCreatedOn(LocalDateTime.now());
         order.setStatus(OrderStatus.CREATED);
         order.setCreatedBy(user);
+        order.setNote(request.getNote());
 
         String generatedOrderNumber = "ORD-" + LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyMMdd-HHmm"));
@@ -45,6 +46,12 @@ public class OrderService {
         addItemsToOrder(order, request);
 
         pricingService.calculate(order, request);
+
+        for (OrderItem item : order.getItems()) {
+            productService.adjustQuantity(
+                    item.getProduct().getId(),
+                    -item.getQuantity());
+        }
 
         return orderRepository.save(order);
     }
@@ -57,8 +64,8 @@ public class OrderService {
                 .axis(req.getAxis())
                 .prismBase(req.getPrismBase())
                 .quantity(req.getQuantity())
-                .priceAtPurchase(req.getPriceAtPurchase())
-                .purchasePriceAtPurchase(product.getPurchasePrice())
+                .salePriceAtSale(req.getSalePriceAtSale())
+                .purchasePriceAtSale(product.getPurchasePrice())
                 .createdOn(LocalDateTime.now())
                 .build();
     }
@@ -89,6 +96,7 @@ public class OrderService {
         request.setTotalBeforeDiscount(order.getTotalBeforeDiscount());
         request.setDiscountPercentage(order.getDiscountPercentage());
         request.setTotal(order.getTotal());
+        request.setNote(order.getNote());
 
         for (OrderItem item : order.getItems()) {
 
@@ -97,6 +105,7 @@ public class OrderService {
             CreateOrderItemRequest itemRequest = new CreateOrderItemRequest();
 
             itemRequest.setCategory(product.getCategory());
+            itemRequest.setProductId(product.getId());
             itemRequest.setBarcode(product.getBarcode());
             itemRequest.setBrand(product.getBrand());
             itemRequest.setModel(product.getModel());
@@ -112,7 +121,7 @@ public class OrderService {
             itemRequest.setPrismBase(item.getPrismBase());
 
             itemRequest.setQuantity(item.getQuantity());
-            itemRequest.setPriceAtPurchase(item.getPriceAtPurchase());
+            itemRequest.setSalePriceAtSale(item.getSalePriceAtSale());
 
             request.getItems().add(itemRequest);
         }
@@ -120,19 +129,61 @@ public class OrderService {
         return request;
     }
 
+//    @Transactional
+//    public void updateOrder(Long id, CreateOrderRequest request) {
+//
+//        Order order = orderRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Order not found"));
+//
+//        order.setCustomer(
+//                customerRepository.findById(request.getCustomerId())
+//                        .orElseThrow(() -> new RuntimeException("Customer not found"))
+//        );
+//        order.setNote(request.getNote());
+//
+//        order.getItems().clear();
+//        addItemsToOrder(order, request);
+//        pricingService.calculate(order, request);
+//        order.setUpdatedOn(LocalDateTime.now());
+//
+//        orderRepository.save(order);
+//    }
+
     @Transactional
     public void updateOrder(Long id, CreateOrderRequest request) {
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            throw new IllegalStateException(
+                    "Анулирана поръчка не може да бъде редактирана."
+            );
+        }
+        // Връщаме старите количества в склада.
+        for (OrderItem item : order.getItems()) {
+            productService.adjustQuantity(
+                    item.getProduct().getId(),
+                    item.getQuantity()
+            );
+        }
         order.setCustomer(
                 customerRepository.findById(request.getCustomerId())
                         .orElseThrow(() -> new RuntimeException("Customer not found"))
         );
 
+        order.setNote(request.getNote());
+
         order.getItems().clear();
         addItemsToOrder(order, request);
+        // Изписваме новите количества.
+        for (OrderItem item : order.getItems()) {
+            productService.adjustQuantity(
+                    item.getProduct().getId(),
+                    -item.getQuantity()
+            );
+        }
+
         pricingService.calculate(order, request);
         order.setUpdatedOn(LocalDateTime.now());
 
@@ -146,5 +197,37 @@ public class OrderService {
                         OrderStatus.CANCELLED
                 )
         );
+    }
+
+    @Transactional
+    public void saveOrder(Order order) {
+        orderRepository.save(order);
+    }
+
+    @Transactional
+    public void updateOrderStatus(Long id, OrderStatus newStatus) {
+
+        Order order = orderRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Анулирана поръчка не може да се променя повторно.
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            return;
+        }
+
+        // При анулиране връщаме всички количества в склада.
+        if (newStatus == OrderStatus.CANCELLED) {
+            for (OrderItem item : order.getItems()) {
+                productService.adjustQuantity(
+                        item.getProduct().getId(),
+                        item.getQuantity()
+                );
+            }
+        }
+
+        order.setStatus(newStatus);
+        order.setUpdatedOn(LocalDateTime.now());
+
+        orderRepository.save(order);
     }
 }

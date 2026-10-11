@@ -2,6 +2,7 @@ package com.opticsappbg.opticsapp.web;
 
 import com.opticsappbg.opticsapp.customer.service.CustomerService;
 import com.opticsappbg.opticsapp.order.model.Order;
+import com.opticsappbg.opticsapp.order.model.OrderStatus;
 import com.opticsappbg.opticsapp.order.service.OrderService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.security.AuthenticationDetails;
@@ -16,6 +17,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
+
 
 @Controller
 @RequestMapping("/orders")
@@ -53,20 +55,38 @@ public class OrderController {
             model.addAttribute("customers", customerService.getAllCustomers());
             model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
             model.addAttribute("brands", productService.getUniqueBrandNames());
+
+            model.addAttribute(
+                    "productError",
+                    bindingResult.getAllErrors()
+                            .stream()
+                            .findFirst()
+                            .map(error -> error.getDefaultMessage())
+                            .orElse("Моля, проверете въведените данни.")
+            );
+
             return "orders/new-order";
         }
 
-            User user = userService.getById(principal.getUserId());
+        User user = userService.getById(principal.getUserId());
 
-        orderService.createOrder(request, user);
+        try {
+            orderService.createOrder(request, user);
+            return "redirect:/orders";
 
-        return "redirect:/orders";
+        } catch (IllegalArgumentException e) {
+
+            model.addAttribute("customers", customerService.getAllCustomers());
+            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+            model.addAttribute("brands", productService.getUniqueBrandNames());
+            model.addAttribute("productError", e.getMessage());
+
+            return "orders/new-order";
+        }
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditOrderForm(
-            @PathVariable Long id,
-            Model model) {
+    public String showEditOrderForm(@PathVariable Long id, Model model) {
 
         Order order = orderService.getOrderById(id);
 
@@ -74,7 +94,9 @@ public class OrderController {
 
         model.addAttribute("order", order);
         model.addAttribute("createOrderRequest", request);
-
+        model.addAttribute(
+                "readOnly",
+                order.getStatus() == OrderStatus.CANCELLED);
         model.addAttribute("customers", customerService.getAllCustomers());
         model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
         model.addAttribute("brands", productService.getUniqueBrandNames());
@@ -86,8 +108,12 @@ public class OrderController {
     public String updateOrder(
             @PathVariable Long id,
             @Valid @ModelAttribute("createOrderRequest") CreateOrderRequest request,
-            BindingResult bindingResult,
-            Model model) {
+            BindingResult bindingResult, Model model) {
+
+        Order existingOrder = orderService.getOrderById(id);
+        if (existingOrder.getStatus() == OrderStatus.CANCELLED) {
+            return "redirect:/orders";
+        }
 
         if (bindingResult.hasErrors()) {
             Order order = orderService.getOrderById(id);
@@ -97,12 +123,34 @@ public class OrderController {
             model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
             model.addAttribute("brands", productService.getUniqueBrandNames());
 
+            model.addAttribute(
+                    "productError",
+                    bindingResult.getAllErrors()
+                            .stream()
+                            .findFirst()
+                            .map(error -> error.getDefaultMessage())
+                            .orElse("Моля, проверете въведените данни.")
+            );
+
             return "orders/new-order";
         }
 
-        orderService.updateOrder(id, request);
+        try {
+            orderService.updateOrder(id, request);
+            return "redirect:/home";
 
-        return "redirect:/orders";
+        } catch (IllegalArgumentException e) {
+
+            Order order = orderService.getOrderById(id);
+
+            model.addAttribute("order", order);
+            model.addAttribute("customers", customerService.getAllCustomers());
+            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+            model.addAttribute("brands", productService.getUniqueBrandNames());
+            model.addAttribute("productError", e.getMessage());
+
+            return "orders/new-order";
+        }
     }
 
     @GetMapping
@@ -110,6 +158,14 @@ public class OrderController {
 
         model.addAttribute("orders", orderService.getAllOrders());
         return "orders/orders-list";
+    }
+
+    @PostMapping("/{id}/update-status")
+    public String updateOrderStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
+
+        orderService.updateOrderStatus(id, status);
+
+        return "redirect:/home";
     }
 
 }

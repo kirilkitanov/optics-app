@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -35,6 +37,8 @@ public class OrderItem {
     private EyeSide eyeSide;
 
     @Column
+    @Min(0)
+    @Max(180)
     private Integer axis;
 
     @Column(name = "prism_base")
@@ -43,15 +47,15 @@ public class OrderItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "purchase_price_at_purchase", nullable = false)
-    private BigDecimal purchasePriceAtPurchase; // За доставната цена и маржа,
+    @Column(name = "purchase_price_at_sale")
+    private BigDecimal purchasePriceAtSale; // За доставната цена и маржа,
     // копие от склада (за да не се променя историята)
 
-    @Column(name = "price_at_purchase", nullable = false)
-    private BigDecimal priceAtPurchase; // ЗАМРАЗЕНАТА ЦЕНА реалната продажна цена в момента
+    @Column(name = "sale_price_at_sale", nullable = false)
+    private BigDecimal salePriceAtSale; // ЗАМРАЗЕНАТА ЦЕНА реалната продажна цена в момента
 
-    @Column(name = "profit_at_purchase")
-    private BigDecimal profitAtPurchase;
+    @Column(name = "profit_at_sale")
+    private BigDecimal profitAtSale;
 
     @Column(nullable = false)
     private LocalDateTime createdOn;

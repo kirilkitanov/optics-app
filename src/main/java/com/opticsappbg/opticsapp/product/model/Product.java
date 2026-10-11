@@ -12,7 +12,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "products")
+@Table(name = "products", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_products_barcode", columnNames = "barcode")})
 public class Product {
 
     @Id
@@ -23,10 +24,10 @@ public class Product {
     @Enumerated(EnumType.STRING)
     private ProductCategory category;
 
-    @Column
+    @Column(nullable = false)
     private String brand;
 
-    @Column
+    @Column(nullable = false)
     private String model;
 
     @Column
@@ -35,17 +36,21 @@ public class Product {
     @Column(name = "size_or_diameter")
     private String sizeOrDiameter;
 
-    @Column
-    private BigDecimal sph;
+    @Column(nullable = false)
+    @Builder.Default
+    private BigDecimal sph = BigDecimal.ZERO;
 
-    @Column
-    private BigDecimal cyl;
+    @Column(nullable = false)
+    @Builder.Default
+    private BigDecimal cyl = BigDecimal.ZERO;
 
-    @Column(name = "add_power")
-    private BigDecimal addPower;
+    @Column(name = "add_power", nullable = false)
+    @Builder.Default
+    private BigDecimal addPower = BigDecimal.ZERO;
 
-    @Column
-    private BigDecimal prism;
+    @Column(nullable = false)
+    @Builder.Default
+    private BigDecimal prism = BigDecimal.ZERO;
 
     @Column(nullable = false)
     private Integer quantity;

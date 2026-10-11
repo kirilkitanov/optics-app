@@ -22,7 +22,9 @@
 
             <div class="content-header">
                 <h1 class="page-title-blue"
-                    th:text="${order != null ? 'Редакция на поръчка ' + order.orderNumber : 'Нова поръчка'}">
+                    th:text="${readOnly == true
+        ? 'Преглед на анулирана поръчка ' + order.orderNumber
+        : (order != null ? 'Редакция на поръчка ' + order.orderNumber : 'Нова поръчка')}">
                     Нова поръчка
                 </h1>
                 <a th:href="@{/orders}" class="btn-new-order">Назад</a>
@@ -30,15 +32,22 @@
 
             <div class="table-container">
 
+                <div th:if="${productError}"
+                     class="product-error"
+                     th:text="${productError}">
+                </div>
+
                 <form th:action="${order != null} ? @{/orders/{id}/edit(id=${order.id})} : @{/orders/new}"
-                      method="POST">
+                      method="POST" novalidate>
+                    <fieldset class="readonly-fieldset" th:disabled="${readOnly == true}">
+
                     <!-- CLIENT -->
                     <div class="form-group">
                         <label class="form-label">Клиент *</label>
 
                         <div style="display:flex; gap:10px; align-items:center;">
 
-                            <select id="customerSelect" name="customerId" class="status-select" required>
+                            <select id="customerSelect" name="customerId" class="status-select">
                                 <option value="">-- Избери клиент --</option>
 
                                 <option th:each="c : ${customers}"
@@ -54,6 +63,18 @@
 
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="orderNote">Бележка</label>
+                        <input type="text"
+                               id="orderNote"
+                               name="note"
+                               class="status-select order-note-input"
+                               maxlength="1000"
+                               placeholder="Бележка към поръчката..."
+                               th:value="${order != null ? order.note : ''}">
+                    </div>
+
 
                     <h3 class="section-title">Спецификация</h3>
 
@@ -104,7 +125,12 @@
                                            th:value="${item.barcode}"
                                            class="status-select barcode-input"
                                            placeholder="Сканирай"
-                                           oninput="autoFillByBarcode(this)">
+                                           onchange="autoFillByBarcode(this)"
+                                           onkeydown="handleBarcodeKeydown(event, this)">
+                                    <input type="hidden"
+                                           th:name="'items[' + ${itemStat.index} + '].productId'"
+                                           th:value="${item.productId}"
+                                           class="product-id-input">
                                 </div>
 
                                 <div class="item-field">
@@ -114,7 +140,8 @@
                                            th:value="${item.brand}"
                                            class="status-select brand-input"
                                            list="brandSuggestions"
-                                           oninput="updateModelsForCurrentRow(this)">
+                                           oninput="updateModelsForCurrentRow(this)"
+                                           onchange="checkProductByCharacteristics(this)">
                                 </div>
 
                                 <div class="item-field">
@@ -124,7 +151,8 @@
                                            th:value="${item.model}"
                                            class="status-select model-input"
                                            list="modelSuggestions"
-                                           onfocus="filterModelsForCurrentRow(this)">
+                                           onfocus="filterModelsForCurrentRow(this)"
+                                           onchange="checkProductByCharacteristics(this)">
                                 </div>
 
                                 <div class="item-field">
@@ -132,12 +160,14 @@
                                     <input type="text"
                                            th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
                                            th:value="${item.sizeOrDiameter}"
-                                           class="status-select">
+                                           class="status-select"
+                                           onchange="checkProductByCharacteristics(this)">
                                 </div>
 
                                 <div class="item-field">
                                     <label>Количество</label>
                                     <input type="number"
+                                           min="1"
                                            th:name="'items[' + ${itemStat.index} + '].quantity'"
                                            th:value="${item.quantity}"
                                            class="status-select">
@@ -146,9 +176,10 @@
                                 <div class="item-field">
                                     <label>Цена</label>
                                     <input type="number"
+                                           min="0"
                                            step="0.01"
-                                           th:name="'items[' + ${itemStat.index} + '].priceAtPurchase'"
-                                           th:value="${item.priceAtPurchase}"
+                                           th:name="'items[' + ${itemStat.index} + '].salePriceAtSale'"
+                                           th:value="${item.salePriceAtSale}"
                                            class="status-select"
                                            required>
                                 </div>
@@ -189,7 +220,8 @@
                                                step="0.25"
                                                th:name="'items[' + ${itemStat.index} + '].sph'"
                                                th:value="${item.sph}"
-                                               class="status-select">
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
                                     </div>
 
                                     <div class="item-field">
@@ -198,7 +230,8 @@
                                                step="0.25"
                                                th:name="'items[' + ${itemStat.index} + '].cyl'"
                                                th:value="${item.cyl}"
-                                               class="status-select">
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
                                     </div>
 
                                     <div class="item-field">
@@ -207,16 +240,18 @@
                                                step="0.25"
                                                th:name="'items[' + ${itemStat.index} + '].addPower'"
                                                th:value="${item.addPower}"
-                                               class="status-select">
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
                                     </div>
 
                                     <div class="item-field">
                                         <label>PRISM</label>
                                         <input type="number"
-                                               step="0.1"
+                                               step="0.25"
                                                th:name="'items[' + ${itemStat.index} + '].prism'"
                                                th:value="${item.prism}"
-                                               class="status-select">
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
                                     </div>
 
                                     <div class="item-field">
@@ -236,17 +271,19 @@
                                                class="status-select">
                                     </div>
 
+                                    <div class="item-actions">
+                                        <button type="button"
+                                                onclick="removeRow(this)"
+                                                class="btn-open">
+                                            Премахни
+                                        </button>
+                                    </div>
+
                                 </div>
 
                             </div>
 
-                            <div class="item-actions">
-                                <button type="button"
-                                        onclick="removeRow(this)"
-                                        class="btn-open">
-                                    Премахни
-                                </button>
-                            </div>
+
 
                         </div>
 
@@ -260,7 +297,7 @@
                     <datalist id="modelSuggestions">
                     </datalist>
 
-                    <button type="button" id="addRowBtn" class="btn-new-order">Добави ред</button>
+                    <button type="button" id="addRowBtn" class="btn-new-order">Добави продукт</button>
                     <!-- TOTALS -->
                     <div class="financial-box">
 
@@ -271,20 +308,27 @@
 
                         <div class="financial-group">
                             <label>Отстъпка %</label>
-                            <input type="number" step="0.01" name="discountPercentage" value="0">
+                            <input type="number"
+                                   step="1"
+                                   name="discountPercentage"
+                                   th:value="${createOrderRequest.discountPercentage != null ? createOrderRequest.discountPercentage : 0}">
                         </div>
 
                         <div class="financial-group">
                             <label>Крайна сума</label>
-                            <input type="number" step="0.01" name="total">
+                            <input type="number"
+                                   step="0.01"
+                                   name="total"
+                                   th:value="${createOrderRequest.total}">
                         </div>
 
                     </div>
 
-                    <div class="form-actions">
-                        <button type="submit" class="btn-new-order">Запази</button>
-                    </div>
+                        <div class="form-actions" th:if="${readOnly != true}">
+                            <button type="submit" class="btn-new-order">Запази</button>
+                        </div>
 
+                    </fieldset>
                 </form>
 
             </div>
@@ -310,9 +354,16 @@
             }
 
             if (el.tagName === 'INPUT') {
-
                 if (el.name.endsWith('.quantity')) {
                     el.value = '1';
+                } else if (
+                    el.name.endsWith('.sph') ||
+                    el.name.endsWith('.cyl') ||
+                    el.name.endsWith('.addPower') ||
+                    el.name.endsWith('.prism')
+                ) {
+                    el.value = '0';
+
                 } else {
                     el.value = '';
                 }
@@ -411,7 +462,7 @@
 
         rows.forEach(row => {
             let qty = parseFloat(row.querySelector('input[name$=".quantity"]')?.value || 0);
-            let price = parseFloat(row.querySelector('input[name$=".priceAtPurchase"]')?.value || 0);
+            let price = parseFloat(row.querySelector('input[name$=".salePriceAtSale"]')?.value || 0);
             baseTotal += qty * price;
         });
         // Записваме сумата преди отстъпка
@@ -424,6 +475,7 @@
 
         return baseTotal;
     }
+
     document.addEventListener("DOMContentLoaded", function () {
         recalcBaseTotal();
     });
@@ -431,7 +483,7 @@
     document.addEventListener("input", function (e) {
         if (
             e.target.name?.includes("quantity") ||
-            e.target.name?.includes("priceAtPurchase")
+            e.target.name?.includes("salePriceAtSale")
         ) {
             recalcBaseTotal();
         }
@@ -556,7 +608,196 @@
 <script th:inline="javascript">
     console.log("MODEL SCRIPT LOADED");
 
+    function showProductError(message) {
+        let errorBox = document.getElementById('productErrorMessage');
+
+        if (!errorBox) {
+            errorBox = document.createElement('div');
+            errorBox.id = 'productErrorMessage';
+            errorBox.className = 'product-error';
+
+            const tableContainer = document.querySelector('.table-container');
+
+            if (tableContainer) {
+                tableContainer.prepend(errorBox);
+            }
+        }
+
+        errorBox.textContent = message;
+        errorBox.hidden = false;
+    }
+
     const brandModelPairs = /*[[${brandModelPairs}]]*/ [];
+
+    function normalizeOpticalValue(value) {
+        if (value === null || value === undefined || value.trim() === '') {
+            return '0';
+        }
+
+        return value;
+    }
+
+    function getProductCharacteristics(row) {
+        return {
+            category: row.querySelector('.category-trigger')?.value || '',
+            brand: row.querySelector('.brand-input')?.value.trim() || '',
+            model: row.querySelector('.model-input')?.value.trim() || '',
+            sizeOrDiameter: row.querySelector('input[name$=".sizeOrDiameter"]')?.value.trim() || '',
+            sph: normalizeOpticalValue(
+                row.querySelector('input[name$=".sph"]')?.value
+            ),
+            cyl: normalizeOpticalValue(
+                row.querySelector('input[name$=".cyl"]')?.value
+            ),
+            addPower: normalizeOpticalValue(
+                row.querySelector('input[name$=".addPower"]')?.value
+            ),
+            prism: normalizeOpticalValue(
+                row.querySelector('input[name$=".prism"]')?.value
+            )
+
+        };
+    }
+
+    async function lookupProductsByCharacteristics(row) {
+
+        const characteristics = getProductCharacteristics(row);
+
+        console.log('Характеристики за lookup:', characteristics);
+
+        if (!characteristics.category) {
+            return [];
+        }
+        const params = new URLSearchParams();
+        params.append('category', characteristics.category);
+
+        params.append('brand', characteristics.brand);
+        params.append('model', characteristics.model);
+        params.append('sph', characteristics.sph);
+        params.append('cyl', characteristics.cyl);
+        params.append('addPower', characteristics.addPower);
+        params.append('prism', characteristics.prism);
+
+        params.append('sizeOrDiameter', characteristics.sizeOrDiameter);
+        try {
+            const response = await fetch(`/products/lookup?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error(`Lookup error: ${response.status}`);
+            }
+            return await response.json();
+
+        } catch (error) {
+            console.error('Грешка при търсене на продукт:', error);
+            return [];
+        }
+    }
+
+    async function checkProductByCharacteristics(inputElement) {
+
+        const row = inputElement.closest('.item-row');
+
+        if (!row) {
+            return;
+        }
+
+        const productIdInput = row.querySelector('.product-id-input');
+
+        if (productIdInput) {
+            productIdInput.value = '';
+        }
+
+        const products = await lookupProductsByCharacteristics(row);
+        console.log('Намерени продукти:', products);
+        const barcodeInput = row.querySelector('.barcode-input');
+        if (!barcodeInput) {
+            return;
+        }
+        if (products.length === 0) {
+            barcodeInput.value = '';
+
+            const productIdInput = row.querySelector('.product-id-input');
+
+            if (productIdInput) {
+                productIdInput.value = '';
+            }
+
+            return;
+        }
+        if (products.length === 1) {
+
+            const product = products[0];
+
+            barcodeInput.value = product.barcode || '';
+
+            const productIdInput = row.querySelector('.product-id-input');
+
+            if (productIdInput) {
+                productIdInput.value = product.id;
+            }
+
+            const priceInput =
+                row.querySelector('input[name$=".salePriceAtSale"]');
+
+            if (priceInput && product.retailPrice != null) {
+                priceInput.value = product.retailPrice;
+                recalcBaseTotal();
+            }
+
+            return;
+        }
+        openProductSelectionModal(row, products);
+    }
+
+    function openProductSelectionModal(row, products) {
+
+        const modal = document.getElementById('productSelectionModal');
+        const list = document.getElementById('productSelectionList');
+
+        list.innerHTML = '';
+
+        products.forEach(product => {
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'product-selection-item';
+            button.textContent =
+                `Баркод: ${product.barcode || 'Без баркод'}`;
+            button.addEventListener('click', function () {
+
+                const barcodeInput = row.querySelector('.barcode-input');
+                const productIdInput = row.querySelector('.product-id-input');
+
+                if (barcodeInput) {
+                    barcodeInput.value = product.barcode || '';
+                }
+
+                if (productIdInput) {
+                    productIdInput.value = product.id;
+                }
+
+                const priceInput =
+                    row.querySelector('input[name$=".salePriceAtSale"]');
+
+                if (priceInput && product.retailPrice != null) {
+                    priceInput.value = product.retailPrice;
+                    recalcBaseTotal();
+                }
+
+                closeProductSelectionModal();
+            });
+            list.appendChild(button);
+        });
+        modal.style.display = 'flex';
+    }
+
+    function closeProductSelectionModal() {
+
+        const modal = document.getElementById('productSelectionModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
 
     function updateModelsForCurrentRow(brandInput) {
         const currentRow = brandInput.closest('.item-row');
@@ -594,47 +835,142 @@
             }
         });
     }
-    function autoFillByBarcode(barcodeInput) {
+
+    function handleBarcodeKeydown(event, input) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            autoFillByBarcode(input);
+        }
+    }
+    async function autoFillByBarcode(barcodeInput) {
+
         const barcodeValue = barcodeInput.value.trim();
-        if (!barcodeValue) return;
 
-        // 1. Търсим продукт с такъв баркод в масива
-        const foundProduct = allProducts.find(p => p.barcode && p.barcode.trim() === barcodeValue);
+        if (!barcodeValue) {
+            return;
+        }
 
-        // 2. Ако намерим съвпадение, попълваме останалите полета на същия ред
-        if (foundProduct) {
-            const currentRow = barcodeInput.closest('.item-row');
+        const currentRow = barcodeInput.closest('.item-row');
 
-            // Попълваме текстовите полета
-            if (foundProduct.brand) currentRow.querySelector('input[name$=".brand"]').value = foundProduct.brand;
-            if (foundProduct.model) currentRow.querySelector('input[name$=".model"]').value = foundProduct.model;
-            if (foundProduct.sizeOrDiameter) currentRow.querySelector('input[name$=".sizeOrDiameter"]').value = foundProduct.sizeOrDiameter;
+        if (!currentRow) {
+            return;
+        }
 
-            // Попълваме диоптрите безопасно (ако съществуват за продукта)
-            if (foundProduct.sph !== null) currentRow.querySelector('input[name$=".sph"]').value = foundProduct.sph;
-            if (foundProduct.cyl !== null) currentRow.querySelector('input[name$=".cyl"]').value = foundProduct.cyl;
-            if (foundProduct.addPower !== null) currentRow.querySelector('input[name$=".addPower"]').value = foundProduct.addPower;
-            if (foundProduct.prism !== null) currentRow.querySelector('input[name$=".prism"]').value = foundProduct.prism;
+        try {
 
-            // Попълваме цената
-            if (foundProduct.retailPrice !== null) {
-                const priceInput = currentRow.querySelector('input[name$=".priceAtPurchase"]');
-                priceInput.value = foundProduct.retailPrice;
+            const response = await fetch(
+                `/products/lookup-by-barcode?barcode=${encodeURIComponent(barcodeValue)}`
+            );
 
-                // Провокираме преизчисляване на тоталите, понеже цената се промени динамично
+            if (!response.ok) {
+
+                const errorData = await response.json().catch(() => null);
+
+                if (errorData?.message) {
+                    showProductError(errorData.message);
+                    return;
+                }
+
+                throw new Error(`Barcode lookup error: ${response.status}`);
+            }
+
+            const product = await response.json();
+            const errorBox = document.getElementById('productErrorMessage');
+
+            if (errorBox) {
+                errorBox.hidden = true;
+                errorBox.textContent = '';
+            }
+
+            // Категория
+            const categorySelect =
+                currentRow.querySelector('.category-trigger');
+
+            if (categorySelect && product.category) {
+                categorySelect.value = product.category;
+                toggleFieldsByCategory(categorySelect);
+            }
+
+            // Бранд
+            const brandInput =
+                currentRow.querySelector('.brand-input');
+            if (brandInput) {
+                brandInput.value = product.brand || '';
+            }
+            // Модел
+            const modelInput =
+                currentRow.querySelector('.model-input');
+            if (modelInput) {
+                modelInput.value = product.model || '';
+            }
+            // Размер / диаметър
+            const sizeInput =
+                currentRow.querySelector('input[name$=".sizeOrDiameter"]');
+            if (sizeInput) {
+                sizeInput.value = product.sizeOrDiameter || '';
+            }
+            // Оптични параметри
+            const sphInput =
+                currentRow.querySelector('input[name$=".sph"]');
+            if (sphInput) {
+                sphInput.value = product.sph ?? 0;
+            }
+            const cylInput =
+                currentRow.querySelector('input[name$=".cyl"]');
+            if (cylInput) {
+                cylInput.value = product.cyl ?? 0;
+            }
+            const addPowerInput =
+                currentRow.querySelector('input[name$=".addPower"]');
+            if (addPowerInput) {
+                addPowerInput.value = product.addPower ?? 0;
+            }
+            const prismInput =
+                currentRow.querySelector('input[name$=".prism"]');
+            if (prismInput) {
+                prismInput.value = product.prism ?? 0;
+            }
+            // Product ID
+            const productIdInput =
+                currentRow.querySelector('.product-id-input');
+            if (productIdInput) {
+                productIdInput.value = product.id;
+            }
+            // Текуща цена на продукта
+            const priceInput =
+                currentRow.querySelector('input[name$=".salePriceAtSale"]');
+            if (priceInput && product.retailPrice != null) {
+                priceInput.value = product.retailPrice;
                 recalcBaseTotal();
             }
-
-            // Автоматично сменяме категорията в падащото меню, ако съвпада
-            if (foundProduct.category) {
-                const categorySelect = currentRow.querySelector('.category-trigger');
-                categorySelect.value = foundProduct.category;
-                toggleFieldsByCategory(categorySelect); // Задействаме скриването/показването на диоптрите спрямо категорията
-            }
+        } catch (error) {
+            console.error(
+                'Грешка при търсене на продукт по баркод:',
+                error
+            );
         }
     }
 </script>
 
+<div id="productSelectionModal" class="modal" style="display:none;">
+    <div class="modal-content product-selection-modal">
+
+        <h3>Избери продукт</h3>
+
+        <p>Намерени са няколко продукта с тези характеристики.</p>
+
+        <div id="productSelectionList"></div>
+
+        <div class="product-selection-actions">
+            <button type="button"
+                    class="btn-open"
+                    onclick="closeProductSelectionModal()">
+                Отказ
+            </button>
+        </div>
+
+    </div>
+</div>
 
 </body>
 </html>

@@ -38,6 +38,12 @@ public class Order {
     @Column
     private LocalDateTime updatedOn;
 
+    @Column(length = 1000)
+    private String note;
+
+    @Column(length = 500)
+    private String cancellationReason;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

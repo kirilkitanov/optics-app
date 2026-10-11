@@ -16,15 +16,20 @@ public class OrderPricingService {
 
         for (OrderItem item : order.getItems()) {
 
-            BigDecimal lineTotal = item.getPriceAtPurchase()
+            BigDecimal lineTotal = item.getSalePriceAtSale()
                     .multiply(BigDecimal.valueOf(item.getQuantity()));
 
-            BigDecimal costTotal = item.getPurchasePriceAtPurchase()
-                    .multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal costTotal = item.getPurchasePriceAtSale() != null
+                    ? item.getPurchasePriceAtSale()
+                    .multiply(BigDecimal.valueOf(item.getQuantity()))
+                    : BigDecimal.ZERO;
 
-            BigDecimal profit = lineTotal.subtract(costTotal);
-
-            item.setProfitAtPurchase(profit);
+            if (item.getPurchasePriceAtSale() != null) {
+                BigDecimal profit = lineTotal.subtract(costTotal);
+                item.setProfitAtSale(profit);
+            } else {
+                item.setProfitAtSale(null);
+            }
 
             totalBeforeDiscount = totalBeforeDiscount.add(lineTotal);
         }
@@ -36,15 +41,11 @@ public class OrderPricingService {
                 ? req.getDiscountPercentage()
                 : BigDecimal.ZERO;
 
-        // 🔥 MANUAL TOTAL OVERRIDE (ако служителят пише крайна сума)
         if (req.getManualTotal() != null) {
-
             order.setTotal(req.getManualTotal());
-
             order.setDiscountPercentage(
                     calculateDiscountFromManual(totalBeforeDiscount, req.getManualTotal())
             );
-
             return;
         }
 
