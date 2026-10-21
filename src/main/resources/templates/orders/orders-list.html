@@ -26,6 +26,29 @@
 
             <div class="content-header">
                 <h1 class="page-title-blue">Всички поръчки</h1>
+
+                <input type="text"
+                       id="orderSearch"
+                       class="order-search-input"
+                       placeholder="Търси по клиент, тел., номер или дата">
+
+                <form th:action="@{/orders}" method="get" class="date-filter-form">
+                    <input type="date"
+                           name="startDate"
+                           th:value="${startDate}"
+                           title="Начална дата">
+
+                    <input type="date"
+                           name="endDate"
+                           th:value="${endDate}"
+                           title="Крайна дата">
+
+                    <button type="submit" class="btn-new-order">Филтрирай</button>
+                </form>
+
+                <a th:href="@{/orders/export(startDate=${startDate},endDate=${endDate})}"
+                   class="btn-new-order">Експорт в Excel</a>
+
                 <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
             </div>
 
@@ -46,9 +69,9 @@
 
                     <tbody>
 
-                    <tr th:each="order : ${orders}">
+                    <tr class="order-row" th:each="order : ${orders}">
 
-                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy HH:mm')}"></td>
+                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy')}"></td>
 
                         <td th:text="${order.orderNumber}"></td>
 
@@ -79,11 +102,16 @@
 
                         <td>
                             <a th:href="@{/orders/{id}/edit(id=${order.id})}"
-                               class="btn-new-order"
+                               class="btn-table-action"
                                th:text="${order.status == T(com.opticsappbg.opticsapp.order.model.OrderStatus).CANCELLED ? 'Отвори' : 'Редакция'}">
                             </a>
                         </td>
+                    </tr>
 
+                    <tr id="noSearchResults" style="display: none;">
+                        <td colspan="8" class="empty-table-message">
+                            Няма поръчки, отговарящи на търсенето.
+                        </td>
                     </tr>
 
                     <tr th:if="${#lists.isEmpty(orders)}">
@@ -99,6 +127,118 @@
         </section>
     </div>
 </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('orderSearch');
+        const orderRows = Array.from(document.querySelectorAll('.order-row'));
+        const noSearchResults = document.getElementById('noSearchResults');
+
+        let selectedIndex = -1;
+
+        orderRows.forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                // Клик върху линк, select или бутон не избира реда.
+                if (event.target.closest('a, select, button, input')) {
+                    return;
+                }
+
+                selectRow(row);
+            });
+        });
+
+        function getVisibleRows() {
+            return orderRows.filter(function (row) {
+                return row.style.display !== 'none';
+            });
+        }
+
+        function selectRow(row) {
+            const visibleRows = getVisibleRows();
+
+            orderRows.forEach(function (item) {
+                item.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = visibleRows.indexOf(row);
+
+            if (selectedIndex >= 0) {
+                row.classList.add('order-row-selected');
+                row.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const searchText = this.value.trim().toLowerCase();
+                let visibleCount = 0;
+
+                orderRows.forEach(function (row) {
+                    const matches = row.innerText.toLowerCase().includes(searchText);
+
+                    row.style.display = matches ? '' : 'none';
+
+                    if (!matches) {
+                        row.classList.remove('order-row-selected');
+                    } else {
+                        visibleCount++;
+                    }
+                });
+
+                selectedIndex = -1;
+
+                if (noSearchResults) {
+                    noSearchResults.style.display =
+                        orderRows.length > 0 && visibleCount === 0 ? '' : 'none';
+                }
+            });
+        }
+
+        document.addEventListener('keydown', function (event) {
+            const target = event.target;
+
+            if (
+                target.matches('input, textarea, select') ||
+                target.isContentEditable
+            ) {
+                return;
+            }
+
+            const visibleRows = getVisibleRows();
+
+            if (visibleRows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+
+                if (event.key === 'ArrowDown') {
+                    selectedIndex = selectedIndex < 0
+                        ? 0
+                        : Math.min(selectedIndex + 1, visibleRows.length - 1);
+                } else {
+                    selectedIndex = selectedIndex < 0
+                        ? visibleRows.length - 1
+                        : Math.max(selectedIndex - 1, 0);
+                }
+
+                selectRow(visibleRows[selectedIndex]);
+            }
+
+            if (event.key === 'Enter' && selectedIndex >= 0) {
+                const selectedRow = visibleRows[selectedIndex];
+                const actionLink = selectedRow.querySelector('.btn-table-action');
+
+                if (actionLink) {
+                    event.preventDefault();
+                    window.location.href = actionLink.href;
+                }
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

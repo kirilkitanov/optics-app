@@ -1,10 +1,292 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit} ? 'Редакция на продукт' : 'Нов продукт'">Нов продукт</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content new-order-page product-form-page">
+
+            <div class="content-header">
+                <h1 class="page-title-blue"
+                    th:text="${isEdit} ? 'Редакция на продукт' : 'Нов продукт'">
+                    Нов продукт
+                </h1>
+
+                <a th:href="@{/products}" class="btn-new-order">Назад</a>
+            </div>
+
+            <div class="table-container">
+
+                <div th:if="${successMessage}"
+                     class="product-error"
+                     th:text="${successMessage}">
+                </div>
+
+                <div th:if="${errorMessage}"
+                     class="product-error"
+                     th:text="${errorMessage}">
+                </div>
+
+                <form th:action="${isEdit}
+                        ? @{/products/{id}/edit(id=${product.id})}
+                        : @{/products/new}"
+                      th:object="${product}"
+                      method="post"
+                      novalidate>
+
+                    <div class="item-row">
+
+                        <div class="item-fields product-main-fields">
+
+                            <div class="item-field">
+                                <label for="category">Категория</label>
+                                <select id="category"
+                                        th:field="*{category}"
+                                        class="status-select"
+                                        required>
+                                    <option value="LENS">Стъкла</option>
+                                    <option value="FRAME">Рамка</option>
+                                    <option value="SUNGLASSES">Слънчеви</option>
+                                    <option value="CONTACT_LENS">Контактни лещи</option>
+                                    <option value="ACCESSORY">Аксесоар</option>
+                                </select>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="barcode">Баркод</label>
+                                <input id="barcode"
+                                       type="text"
+                                       th:field="*{barcode}"
+                                       class="status-select"
+                                       placeholder="Въведи баркод">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="brand">Бранд</label>
+                                <input id="brand"
+                                       type="text"
+                                       th:field="*{brand}"
+                                       class="status-select"
+                                       list="brandSuggestions"
+                                       maxlength="255"
+                                       autocomplete="off"
+                                       required>
+
+                                <datalist id="brandSuggestions">
+                                    <option th:each="brandName : ${brands}"
+                                            th:value="${brandName}">
+                                    </option>
+                                </datalist>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="model">Модел</label>
+                                <input id="model"
+                                       type="text"
+                                       th:field="*{model}"
+                                       class="status-select"
+                                       list="modelSuggestions"
+                                       maxlength="255"
+                                       autocomplete="off"
+                                       required>
+
+                                <datalist id="modelSuggestions"></datalist>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="sizeOrDiameter">Размер / диаметър</label>
+                                <input id="sizeOrDiameter"
+                                       type="text"
+                                       th:field="*{sizeOrDiameter}"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="purchasePrice">Покупна цена</label>
+                                <input id="purchasePrice"
+                                       type="number"
+                                       lang="en"
+                                       min="0"
+                                       step="0.01"
+                                       th:field="*{purchasePrice}"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="retailPrice">Продажна цена</label>
+                                <input id="retailPrice"
+                                       type="number"
+                                       lang="en"
+                                       min="0"
+                                       step="0.01"
+                                       th:field="*{retailPrice}"
+                                       class="status-select"
+                                       required>
+                            </div>
+
+                        </div>
+
+                        <div class="diopter-section">
+
+                            <div class="item-fields product-second-fields">
+
+                                <div id="opticalFields"
+                                     class="product-optical-fields">
+
+                                    <div class="item-field">
+                                        <label for="sph">SPH</label>
+                                        <input id="sph"
+                                               type="number"
+                                               lang="en"
+                                               step="0.25"
+                                               th:field="*{sph}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label for="cyl">CYL</label>
+                                        <input id="cyl"
+                                               type="number"
+                                               lang="en"
+                                               step="0.25"
+                                               th:field="*{cyl}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label for="addPower">ADD</label>
+                                        <input id="addPower"
+                                               type="number"
+                                               lang="en"
+                                               step="0.25"
+                                               th:field="*{addPower}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label for="prism">PRISM</label>
+                                        <input id="prism"
+                                               type="number"
+                                               lang="en"
+                                               step="0.25"
+                                               th:field="*{prism}"
+                                               class="status-select">
+                                    </div>
+
+                                </div>
+
+                                <div class="item-field product-note-field">
+                                    <label for="note">Бележка към продукта</label>
+                                    <textarea id="note"
+                                              th:field="*{note}"
+                                              class="status-select"
+                                              maxlength="500"
+                                              rows="2"
+                                              placeholder="Допълнителна информация..."></textarea>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit"
+                                class="btn-new-order"
+                                th:text="${isEdit} ? 'Запази промените' : 'Създай продукт'">
+                            Създай продукт
+                        </button>
+                    </div>
+
+                </form>
+
+                <div id="brandModelData" hidden>
+                    <span th:each="pair : ${brandModelPairs}"
+                          th:attr="data-brand=${pair[0]},
+                                   data-model=${pair[1]}">
+                    </span>
+                </div>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
+<script>
+    function toggleOpticalFields() {
+        const category = document.getElementById('category');
+        const opticalFields = document.getElementById('opticalFields');
+
+        if (category.value === 'LENS' ||
+            category.value === 'CONTACT_LENS') {
+            opticalFields.style.display = 'contents';
+        } else {
+            opticalFields.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const category = document.getElementById('category');
+        const brandInput = document.getElementById('brand');
+        const modelInput = document.getElementById('model');
+        const modelSuggestions = document.getElementById('modelSuggestions');
+
+        const brandModelData = document.querySelectorAll(
+            '#brandModelData span'
+        );
+
+        function updateModelSuggestions() {
+            const enteredBrand = brandInput.value
+                .trim()
+                .toLocaleLowerCase('bg');
+
+            modelSuggestions.replaceChildren();
+
+            if (!enteredBrand) {
+                return;
+            }
+
+            const models = new Set();
+
+            brandModelData.forEach(function (item) {
+                const existingBrand = (item.dataset.brand || '')
+                    .trim()
+                    .toLocaleLowerCase('bg');
+
+                const existingModel = (item.dataset.model || '').trim();
+
+                if (existingBrand.startsWith(enteredBrand) && existingModel) {
+                    models.add(existingModel);
+                }
+            });
+
+            models.forEach(function (modelName) {
+                const option = document.createElement('option');
+                option.value = modelName;
+                modelSuggestions.appendChild(option);
+            });
+        }
+
+        category.addEventListener('change', toggleOpticalFields);
+        brandInput.addEventListener('input', updateModelSuggestions);
+
+        toggleOpticalFields();
+        updateModelSuggestions();
+    });
+</script>
+
 </body>
 </html>

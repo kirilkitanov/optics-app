@@ -5,6 +5,10 @@ html, body {
     overflow: hidden;
 }
 
+html {
+    height: 100%;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -13,13 +17,16 @@ html, body {
 }
 
 body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-height: 0;
     background-color: #f4f6f8;
 }
 
-/* --- ХЕДЪР (Направена по-тясна линия чрез намален padding) --- */
 .header {
     background-color: #ffffff;
-    padding: 8px 30px; /* Намалено от 15px на 8px за по-тясна лента */
+    padding: 8px 30px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -44,20 +51,18 @@ body {
     gap: 15px;
 }
 
-/* Потребителят е в синьо */
 .logged-user {
     color: #1f4e79;
     font-weight: bold;
     font-size: 14px;
 }
 
-/* Бутонът Изход е заоблен с 8px като останалите бутони */
 .btn-logout {
     background-color: #ff8c00;
     color: white;
     border: none;
     padding: 6px 14px;
-    border-radius: 6px; /* Заоблен напълно */
+    border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
     font-size: 13px;
@@ -68,7 +73,6 @@ body {
     background-color: #e07b00;
 }
 
-/* --- ЛЕЯУТ НА СТРАНИЦАТА --- */
 .app-wrapper {
     height: 100vh;
     display: flex;
@@ -80,9 +84,9 @@ body {
     display: flex;
     flex: 1; /* НЕ height 100vh */
     overflow: hidden;
+    min-height: 0;
 }
 
-/* --- ВЕРТИКАЛЕН САЙДБАР --- */
 .sidebar {
     width: 180px;
     background-color: #1f4e79;
@@ -91,7 +95,6 @@ body {
     flex-shrink: 0;
 }
 
-/* Текстът "Оптика" се скрива, ако няма лого изображение */
 .sidebar .logo {
     padding-bottom: 15px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -124,21 +127,22 @@ body {
     color: #ffffff;
 }
 
-/* --- СЕКЦИЯ СЪДЪРЖАНИЕ --- */
 .content {
     flex-grow: 1;
-    padding: 30px;
+    padding: 11px 20px;
     display: flex;
     flex-direction: column;
     overflow: auto;
+    min-width: 0;
+    min-height: 0;
 }
 
 .content-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    gap: 15px;
+    margin-bottom: 12px;
+    gap: 10px;
 }
 
 .no-orders-container {
@@ -147,44 +151,52 @@ body {
     color: #777777;
     font-size: 16px;
     font-style: italic;
-    background: transparent; /* Изцяло прозрачно, за да не дразни окото */
-    margin: auto 0; /* Центрира съобщението вертикално в празното пространство */
+    background: transparent;
+    margin: auto 0;
 }
 
-/* СИНЬО ЗАГЛАВИЕ (Добавен липсващ клас) */
 .page-title-blue {
-    font-size: 28px;
+    font-size: 20px;
     font-weight: bold;
-    color: #1f4e79; /* Марковото синьо */
+    color: #1f4e79;
 }
 
-/* Оранжевият бутон "Нова поръчка" */
+.content:not(.product-page) .page-title-blue {
+    transform: translateY(4px);
+}
+
 .btn-new-order {
     background-color: #ff8c00;
     color: white;
     text-decoration: none;
-    padding: 8px 8px;
+    padding: 6px 10px;
     border-radius: 6px;
     font-size: 14px;
     font-weight: normal;
     white-space: nowrap;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s
+}
+
+.content-header .btn-new-order {
+    transform: translateY(4px);
+}
+
+.customer-note-row .btn-new-order {
+    padding: 6px 10px;
 }
 
 .btn-new-order:hover {
     background-color: #e07b00;
 }
 
-/* --- ТАБЛИЦА --- */
 .table-container {
     background: #ffffff;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow-x: auto;
     margin-bottom: 25px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
-/* Съобщения за грешки във формата за поръчка */
 .product-error {
     padding: 12px 16px;
     margin-bottom: 20px;
@@ -202,7 +214,7 @@ table {
     border-collapse: collapse;
     min-width: 600px;
     background: #ffffff;
-    border-radius: 8px;
+    border-radius: 4px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -210,20 +222,19 @@ table {
 th {
     background-color: #1f4e79;
     color: white;
-    padding: 15px 20px;
-    font-size: 15px;
+    padding: 8px 10px;
+    font-size: 14px;
     font-weight: bold;
     text-align: left;
 }
 
 td {
-    padding: 15px 20px;
+    padding: 8px 10px;
     border-bottom: 1px solid #eeeeee;
     font-size: 14px;
     color: #333333;
 }
 
-/* Стил за падащото меню в таблицата */
 .status-select {
     padding: 6px 10px;
     border: 1px solid #cccccc;
@@ -239,23 +250,25 @@ td {
     border-color: #1f4e79;
 }
 
-/* Оранжев бутон "Отвори" */
-.btn-open {
-    background-color: #ff8c00;
+.btn-table-action {
+    display: inline-block;
+    width: 85px;
+    padding: 5px 0;
+    background-color: #1f4e79;
     color: white;
-    border: none;
-    padding: 6px 15px;
+    text-decoration: none;
     border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
+    font-size: 14px;
+    font-weight: normal;
+    text-align: center;
+    box-sizing: border-box;
     transition: background-color 0.2s;
 }
 
-.btn-open:hover {
-    background-color: #e07b00;
+.btn-table-action:hover {
+    background-color: #163856;
 }
 
-/* --- АДАПТИВНОСТ ЗА МОБИЛНИ УСТРОЙСТВА --- */
 @media (max-width: 768px) {
     .header {
         padding: 10px 15px;
@@ -267,10 +280,6 @@ td {
     .user-box {
         width: 100%;
         justify-content: center;
-    }
-
-    .main-container {
-        flex-direction: column;
     }
 
     .sidebar {
@@ -308,7 +317,7 @@ td {
     }
 
     .content-header h1 {
-        font-size: 22px;
+        font-size: 20px;
     }
 
     .btn-new-order {
@@ -340,16 +349,28 @@ td {
     gap: 10px;
 }
 
-/* ==========================================================================
-   ОПТИМИЗАЦИЯ НА ФОРМАТА ЗА НОВА ПОРЪЧКА И ПРЕМАХВАНЕ НА СКРОЛА
-   ========================================================================== */
-
-/* Общи корекции за формата */
 .form-group {
     background: #ffffff;
     padding: 4px 20px;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.customer-note-row {
+    display: grid;
+    grid-template-columns: minmax(250px, 0.7fr) minmax(0, 1.8fr);
+    gap: 12px;
+    align-items: stretch;
+}
+
+.customer-note-row .form-group {
+    min-width: 0;
+    padding: 4px 12px;
+    margin: 0;
+}
+
+.customer-note-row #customerSelect {
+    width: 100%;
+    min-width: 0;
 }
 
 .form-label {
@@ -363,17 +384,15 @@ td {
 .section-title {
     font-size: 14px;
     color: #1f4e79;
-    margin: 25px 15px 0;
-    padding-bottom: 5px;
+    margin: 10px 12px 0;
+    padding-bottom: 4px;
 }
 
-/* Корекция на селекта за Клиент */
 #customerSelect {
     flex-grow: 1;
-    height: 36px;
+    height: 30px;
 }
 
-/* Бутони и елементи във формата */
 button[type="button"].btn-new-order,
 button[type="submit"].btn-new-order {
     border: none;
@@ -381,13 +400,11 @@ button[type="submit"].btn-new-order {
 }
 
 #addRowBtn {
-    margin-left: 20px;
+    margin-left: 12px;
+    margin-top: 8px;
     display: inline-block;
+    font-size: 12px
 }
-
-/* ==========================================================================
-   СПЕЦИФИКАЦИЯ НА ПРОДУКТИТЕ - НОВА ПОДРЕДБА
-   ========================================================================== */
 
 #prescriptionItems {
     width: 100%;
@@ -395,20 +412,17 @@ button[type="submit"].btn-new-order {
 
 .item-row {
     background: #ffffff;
-    border-top: 1px solid #dfe4e8; /* Цветна рамка отгоре */
-    border-bottom: 1px solid #dfe4e8; /* Цветна рамка отдолу */
-    border-left: 1px solid transparent; /* Прозрачна отляво */
-    border-right: 1px solid transparent; /* Прозрачна отдясно */
-    padding: 20px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    border-bottom: 1px solid #dfe4e8;
+    border-left: 1px solid transparent;
+    border-right: 1px solid transparent;
+    padding: 12px;
 }
 
 .item-header {
     display: flex;
     align-items: center;
-    margin-bottom: 18px;
-    padding-bottom: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid #eeeeee;
 }
 
@@ -420,14 +434,14 @@ button[type="submit"].btn-new-order {
 .item-fields {
     display: grid;
     grid-template-columns:
-        130px
-        130px
-        minmax(140px, 1.2fr)
-        minmax(140px, 1.2fr)
-        100px
-        80px
-        110px;
-    gap: 12px;
+        minmax(95px, 0.9fr)
+        minmax(100px, 0.9fr)
+        minmax(110px, 1fr)
+        minmax(120px, 1.1fr)
+        minmax(75px, 0.65fr)
+        65px
+        85px;
+    gap: 8px;
     align-items: end;
 }
 
@@ -445,21 +459,29 @@ button[type="submit"].btn-new-order {
     font-weight: bold;
 }
 
-.item-field .status-select {
-    width: 100%;
-    height: 36px;
-    padding: 6px 8px;
+.item-field label .item-number {
+    display: inline;
+    margin-right: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #1f4e79;
 }
 
-/* Компактни полета за количество и цена */
+.item-field .status-select {
+    width: 100%;
+    height: 30px;
+    padding: 4px 6px;
+    font-size: 12px;
+}
+
 .item-row input[name$=".quantity"] {
     width: 80px;
     max-width: 80px;
 }
 
 .item-row input[name$=".priceAtPurchase"] {
-    width: 110px;
-    max-width: 110px;
+    width: 85px;
+    max-width: 85px;
 }
 
 .item-field input.status-select,
@@ -468,16 +490,15 @@ button[type="submit"].btn-new-order {
 }
 
 .diopter-section {
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 1px solid #eeeeee;
+    margin-top: 4px;
+    padding-top: 4px;
 }
 
 .diopter-section .item-fields {
     display: grid;
     /* Първите 7 колони се разпределят автоматично, а 8-мата заема останалото място докрай */
     grid-template-columns: repeat(7, minmax(70px, 1fr)) 1fr;
-    gap: 12px;
+    gap: 8px;
     align-items: end;
 }
 
@@ -486,38 +507,33 @@ button[type="submit"].btn-new-order {
     font-size: 13px;
 }
 
-.diopter-title {
-    color: #1f4e79;
-    font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 12px;
-}
-
 .item-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: 18px;
-    padding-top: 12px;
+    margin-top: 8px;
+    padding-top: 0;
 }
 
-.item-actions .btn-open {
+.item-actions .btn-remove-row {
     background-color: #dc3545;
-    padding: 10px 16px;
+    color: white;
+    padding: 7px 10px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: normal;
+    white-space: nowrap;
+    transition: background-color 0.2s;
 }
 
-.item-actions .btn-open:hover {
+.item-actions .btn-remove-row:hover {
     background-color: #bd2130;
 }
 
-/* Скритите секции не заемат място */
 .hidden-field {
     display: none !important;
 }
-
-
-/* ==========================================================================
-   АДАПТИВНОСТ НА ПРОДУКТОВИТЕ
-   ========================================================================== */
 
 @media (max-width: 1200px) {
 
@@ -530,6 +546,10 @@ button[type="submit"].btn-new-order {
 
     .item-fields {
         grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+
+    .customer-note-row {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -544,19 +564,18 @@ button[type="submit"].btn-new-order {
     }
 }
 
-/* --- СТИЛИЗИРАНЕ НА СЕКТОР ФИНАНСИ (TOTALS) --- */
 .financial-box {
     background: #ffffff;
     border: 1px solid #1f4e79;
     border-radius: 8px;
-    padding: 20px;
-    margin-top: 2px;
+    padding: 8px 12px;
+    margin-top: -28px;
     max-width: 350px;
     margin-left: auto; /* Избутва финансовия блок вдясно */
-    margin-right: 20px;
+    margin-right: 12px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -574,19 +593,18 @@ button[type="submit"].btn-new-order {
 }
 
 .financial-group input {
-    width: 150px;
-    height: 36px;
-    padding: 6px 10px;
+    width: 120px;
+    height: 30px;
+    padding: 4px 8px;
     border: 1px solid #cccccc;
     border-radius: 6px;
     text-align: right;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
     color: #333333;
     outline: none;
 }
 
-/* Отличаване на финалното поле за плащане */
 .financial-group input[name="total"] {
     border-color: #ff8c00;
     color: #ff8c00;
@@ -600,22 +618,20 @@ button[type="submit"].btn-new-order {
     border-color: #e0e0e0;
 }
 
-/* Действия в долната част на формата */
 .form-actions {
-    margin-top: 25px;
-    margin-right: 20px;
+    margin-top: 12px;
+    margin-right: 12px;
     margin-bottom: 20px;
     display: flex;
     justify-content: flex-end;
 }
 
 .form-actions .btn-new-order {
-    padding: 12px 35px;
-    font-size: 15px;
+    padding: 7px 10px;
+    font-size: 14px;
     font-weight: bold;
 }
 
-/* Подобрения по модалния прозорец за клиент за консистентност */
 .modal-content h3 {
     color: #1f4e79;
     font-size: 18px;
@@ -640,10 +656,6 @@ button[type="submit"].btn-new-order {
 
 .modal-content input:focus {
     border-color: #1f4e79;
-}
-
-.hidden-field {
-    display: none !important;
 }
 
 .product-selection-modal {
@@ -688,3 +700,571 @@ button[type="submit"].btn-new-order {
     padding: 0;
     min-width: 0;
 }
+
+
+.product-search {
+    margin-bottom: 16px;
+}
+
+.product-search input {
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #d5dbe1;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.product-page {
+    gap: 0;
+    min-width: 0;
+    padding: 18px 20px;
+}
+
+.product-page .content-header {
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.product-page .page-title-blue {
+    font-size: 20px;
+}
+
+.product-page .btn-new-order {
+    padding: 7px 10px;
+    margin-left: 8px;
+}
+
+.product-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.product-summary-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    padding: 6px 12px;
+    background: #1f4e79;
+    border: 1px solid #1f4e79;
+    border-radius: 5px;
+    box-shadow: none;
+}
+
+.product-summary-label {
+    flex: 1 1 80%;
+    min-width: 0;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.product-summary-card strong {
+    flex: 0 0 20%;
+    color: #fff;
+    font-size: 17px;
+    line-height: 1.2;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.product-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.8fr) minmax(250px, 0.85fr);
+    align-items: start;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+}
+
+.product-list-panel,
+.product-details-panel {
+    min-width: 0;
+    max-width: 100%;
+    background: #fff;
+    border: 1px solid #e5e9ed;
+    border-radius: 6px;
+    box-shadow: none;
+}
+
+.product-list-panel {
+    overflow: hidden;
+}
+
+.product-toolbar {
+    display: grid;
+    grid-template-columns:
+        minmax(150px, 2fr)
+        repeat(2, minmax(95px, 1fr))
+        minmax(90px, 1fr)
+        repeat(3, minmax(58px, 0.6fr))
+        minmax(125px, 1.2fr);
+    gap: 7px;
+    padding: 10px;
+    border-bottom: 1px solid #e5e9ed;
+}
+
+.product-toolbar input,
+.product-toolbar select {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 5px 7px;
+    border: 1px solid #d5dbe1;
+    border-radius: 4px;
+    background: #fff;
+    color: #333;
+    font-size: 12px;
+    outline: none;
+}
+
+.product-toolbar input:focus,
+.product-toolbar select:focus {
+    border-color: #1f4e79;
+    box-shadow: 0 0 0 2px rgba(31, 78, 121, 0.08);
+}
+
+.product-toolbar select {
+    cursor: pointer;
+}
+
+.product-table-wrapper {
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+#productsTable {
+    width: 100%;
+    min-width: 650px;
+    margin: 0;
+    border-collapse: collapse;
+    background: #fff;
+    box-shadow: none;
+}
+
+#productsTable th,
+#productsTable td {
+    padding: 8px 9px;
+    text-align: left;
+    border-bottom: 1px solid #e8edf1;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+#productsTable th {
+    background: #f4f6f8;
+    color: #1f4e79;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#productsTable tbody tr.product-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+#productsTable tbody tr.product-row:hover {
+    background: #f3f7fb;
+}
+
+#productsTable tbody tr.product-row-selected {
+    background: #e8f1fa;
+    box-shadow: inset 3px 0 0 #1f4e79;
+}
+
+#productsTable tbody tr.product-row-selected:hover {
+    background: #e0ecf8;
+}
+
+#productsTable tbody tr[hidden] {
+    display: none;
+}
+
+#productsTable .stock-negative {
+    color: #c62828;
+    font-weight: 700;
+}
+
+.empty-products {
+    padding: 16px 10px;
+    color: #687782;
+    text-align: center;
+    font-size: 13px;
+}
+
+#noSearchResults[hidden],
+#noProductSelected[hidden],
+#selectedProductDetails[hidden] {
+    display: none;
+}
+
+.product-details-panel {
+    padding: 10px;
+    max-height: calc(100vh - 130px);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.product-details-empty {
+    padding: 10px 4px;
+    text-align: center;
+}
+
+.product-details-empty h2 {
+    margin-bottom: 4px;
+    color: #1f4e79;
+    font-size: 15px;
+}
+
+.product-details-empty p {
+    margin-bottom: 0;
+    color: #687782;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.product-details-heading {
+    padding-bottom: 7px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #e5e9ed;
+}
+
+.product-details-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: #687782;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.product-details-heading h2 {
+    color: #1f4e79;
+    font-size: 17px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.product-details-heading p {
+    margin-top: 4px;
+    color: #687782;
+    font-size: 12px;
+}
+
+.product-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 8px;
+}
+
+.product-detail-item {
+    gap: 2px;
+    padding: 5px 4px 5px 0;
+}
+
+.product-detail-item span,
+.product-detail-note > span {
+    color: #687782;
+    font-size: 11px;
+}
+
+.product-detail-item strong {
+    color: #303942;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.product-detail-note {
+    margin-top: 12px;
+    padding: 10px;
+    background: #f7f9fb;
+    border-radius: 5px;
+}
+
+.product-detail-note p {
+    margin-top: 5px;
+    color: #333;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.product-detail-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.btn-product-action {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    padding: 7px 8px;
+    border: 1px solid #1f4e79;
+    border-radius: 5px;
+    background: #1f4e79;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-product-action:hover {
+    background: #163856;
+}
+
+.btn-product-action.btn-stock-action {
+    border-color: #ff8c00;
+    background: #ff8c00;
+}
+
+.btn-product-action.btn-stock-action:hover {
+    background: #e67e00;
+}
+
+.product-details-hint {
+    margin-top: 9px;
+    color: #687782;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+@media (max-width: 1350px) {
+    .product-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .product-toolbar input:first-child {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 950px) {
+    .product-workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .product-details-panel {
+        max-height: none;
+        overflow: visible;
+    }
+}
+
+@media (max-width: 650px) {
+    .product-page {
+        padding: 14px 10px;
+    }
+
+    .product-page .content-header {
+        align-items: flex-start;
+    }
+
+    .product-page .page-title-blue {
+        font-size: 20px;
+    }
+
+    .product-summary {
+        gap: 6px;
+    }
+
+    .product-summary-card {
+        padding: 8px;
+    }
+
+    .product-summary-label {
+        font-size: 10px;
+    }
+
+    .product-summary-card strong {
+        font-size: 17px;
+    }
+
+    .product-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .product-toolbar input:first-child {
+        grid-column: span 2;
+    }
+
+    .product-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+body > .app-wrapper {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+body > .app-wrapper > .main-container {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
+}
+
+body > .app-wrapper > .main-container > .sidebar {
+    flex: 0 0 180px;
+    width: 180px;
+    min-width: 180px;
+    height: 100%;
+    align-self: stretch;
+    overflow-y: auto;
+}
+
+body > .app-wrapper > .main-container > .product-page {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.customer-search {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+}
+
+.customer-search > input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.customer-source-select {
+    display: none;
+}
+
+.customer-search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 240px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.customer-search-result {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-bottom: 1px solid #eee;
+    background: #fff;
+    color: #333;
+    text-align: left;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.customer-search-result:hover {
+    background: #f0f5fa;
+}
+
+.customer-search-empty {
+    padding: 10px;
+    color: #666;
+    font-size: 13px;
+}
+
+.order-search-input {
+    flex: 1;
+    min-width: 100px;
+    height: 32px;
+    padding: 5px 10px;
+    border: 1px solid #d5dbe1;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    transform: translateY(4px);
+}
+
+.order-row {
+    cursor: pointer;
+}
+
+.order-row-selected {
+    background-color: #e8f1fa;
+    box-shadow: inset 3px 0 0 #1f4e79;
+}
+
+.date-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.date-filter-form input[type="date"] {
+    height: 32px;
+    box-sizing: border-box;
+    padding: 5px 8px;
+    border: 1px solid #d5dbe1;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    background-color: #fff;
+    transform: translateY(4px);
+}
+
+.product-form-page .product-main-fields {
+    grid-template-columns:
+        minmax(95px, 0.9fr)
+        minmax(100px, 0.9fr)
+        minmax(110px, 1fr)
+        minmax(120px, 1.1fr)
+        minmax(100px, 0.9fr)
+        minmax(105px, 0.9fr)
+        minmax(105px, 0.9fr);
+}
+
+.product-form-page #opticalFields {
+    display: contents;
+}
+
+.product-form-page .product-second-fields {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.product-form-page .product-note-field {
+    grid-column: span 3;
+}
+
+.product-form-page .product-note-field textarea {
+    width: 100%;
+    height: 30px;
+    min-height: 30px;
+    resize: none;
+    box-sizing: border-box;
+}
+
+
+
+

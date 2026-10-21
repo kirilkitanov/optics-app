@@ -18,7 +18,8 @@
 
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
-        <section class="content">
+        <!--        <section class="content">-->
+        <section class="content new-order-page">
 
             <div class="content-header">
                 <h1 class="page-title-blue"
@@ -31,6 +32,10 @@
             </div>
 
             <div class="table-container">
+                <div id="productErrorMessage"
+                     class="product-error"
+                     hidden>
+                </div>
 
                 <div th:if="${productError}"
                      class="product-error"
@@ -38,295 +43,314 @@
                 </div>
 
                 <form th:action="${order != null} ? @{/orders/{id}/edit(id=${order.id})} : @{/orders/new}"
-                      method="POST" novalidate>
+                      method="POST"
+                      novalidate
+                      onsubmit="if (!validateBrands()) return false;">
                     <fieldset class="readonly-fieldset" th:disabled="${readOnly == true}">
 
-                    <!-- CLIENT -->
-                    <div class="form-group">
-                        <label class="form-label">Клиент *</label>
+                        <div class="customer-note-row">
+                            <!-- CLIENT -->
+                            <div class="form-group">
+                                <label class="form-label">Клиент *</label>
 
-                        <div style="display:flex; gap:10px; align-items:center;">
-
-                            <select id="customerSelect" name="customerId" class="status-select">
-                                <option value="">-- Избери клиент --</option>
-
-                                <option th:each="c : ${customers}"
-                                        th:value="${c.id}"
-                                        th:text="${c.fullName + ' - ' + c.phone}"
-                                        th:selected="${createOrderRequest.customerId == c.id}">
-                                </option>
-                            </select>
-
-                            <button type="button" class="btn-new-order" onclick="openCustomerModal()">
-                                + Нов
-                            </button>
-
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="orderNote">Бележка</label>
-                        <input type="text"
-                               id="orderNote"
-                               name="note"
-                               class="status-select order-note-input"
-                               maxlength="1000"
-                               placeholder="Бележка към поръчката..."
-                               th:value="${order != null ? order.note : ''}">
-                    </div>
+                                <div style="display:flex; gap:10px; align-items:center;">
 
 
-                    <h3 class="section-title">Спецификация</h3>
+                                    <div class="customer-search">
+                                        <input type="text"
+                                               id="customerSearchInput"
+                                               class="status-select"
+                                               placeholder="Въведи име или телефон..."
+                                               autocomplete="off">
 
-                    <div id="prescriptionItems">
+                                        <div id="customerSearchResults"
+                                             class="customer-search-results"
+                                             style="display: none;">
+                                        </div>
+                                    </div>
 
-                        <div class="item-row"
-                             th:each="item, itemStat : ${createOrderRequest.items}">
+                                    <select id="customerSelect"
+                                            name="customerId"
+                                            class="customer-source-select">
+                                        <option value="">-- Избери клиент --</option>
 
-                            <div class="item-header">
-                                <strong>Продукт 1</strong>
-                            </div>
-
-                            <!-- ОСНОВНИ ДАННИ -->
-                            <div class="item-fields">
-
-                                <div class="item-field">
-                                    <label>Категория</label>
-                                    <select th:name="'items[' + ${itemStat.index} + '].category'"
-                                            class="status-select category-trigger"
-                                            onchange="toggleFieldsByCategory(this)">
-                                        <option value="LENS"
-                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).LENS}">
-                                            Стъкла
-                                        </option>
-                                        <option value="FRAME"
-                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).FRAME}">
-                                            Рамка
-                                        </option>
-                                        <option value="SUNGLASSES"
-                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).SUNGLASSES}">
-                                            Слънчеви
-                                        </option>
-                                        <option value="CONTACT_LENS"
-                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).CONTACT_LENS}">
-                                            Контактни лещи
-                                        </option>
-                                        <option value="ACCESSORY"
-                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).ACCESSORY}">
-                                            Аксесоар
+                                        <option th:each="c : ${customers}"
+                                                th:value="${c.id}"
+                                                th:text="${c.fullName + ' - ' + c.phone}"
+                                                th:selected="${createOrderRequest.customerId == c.id}">
                                         </option>
                                     </select>
+
+
+                                    <button type="button" class="btn-new-order" onclick="openCustomerModal()">
+                                        + Нов
+                                    </button>
+
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="orderNote">Бележка</label>
+                                <input type="text"
+                                       id="orderNote"
+                                       name="note"
+                                       class="status-select order-note-input"
+                                       maxlength="1000"
+                                       placeholder="Бележка към поръчката..."
+                                       th:value="${order != null ? order.note : ''}">
+                            </div>
+                        </div>
+
+                            <h3 class="section-title">Спецификация</h3>
+
+                            <div id="prescriptionItems">
+
+                                <div class="item-row"
+                                     th:each="item, itemStat : ${createOrderRequest.items}">
+
+                                    <!-- ОСНОВНИ ДАННИ -->
+                                    <div class="item-fields">
+
+                                        <div class="item-field">
+                                            <label><span class="item-number"></span>Категория</label>
+                                            <select th:name="'items[' + ${itemStat.index} + '].category'"
+                                                    class="status-select category-trigger"
+                                                    onchange="toggleFieldsByCategory(this)">
+                                                <option value="LENS"
+                                                        th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).LENS}">
+                                                    Стъкла
+                                                </option>
+                                                <option value="FRAME"
+                                                        th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).FRAME}">
+                                                    Рамка
+                                                </option>
+                                                <option value="SUNGLASSES"
+                                                        th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).SUNGLASSES}">
+                                                    Слънчеви
+                                                </option>
+                                                <option value="CONTACT_LENS"
+                                                        th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).CONTACT_LENS}">
+                                                    Контактни лещи
+                                                </option>
+                                                <option value="ACCESSORY"
+                                                        th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).ACCESSORY}">
+                                                    Аксесоар
+                                                </option>
+                                            </select>
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Баркод</label>
+                                            <input type="text"
+                                                   th:name="'items[' + ${itemStat.index} + '].barcode'"
+                                                   th:value="${item.barcode}"
+                                                   class="status-select barcode-input"
+                                                   placeholder="Сканирай"
+                                                   onchange="autoFillByBarcode(this)"
+                                                   onkeydown="handleBarcodeKeydown(event, this)">
+                                            <input type="hidden"
+                                                   th:name="'items[' + ${itemStat.index} + '].productId'"
+                                                   th:value="${item.productId}"
+                                                   class="product-id-input">
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Бранд</label>
+                                            <input type="text"
+                                                   th:name="'items[' + ${itemStat.index} + '].brand'"
+                                                   th:value="${item.brand}"
+                                                   class="status-select brand-input"
+                                                   list="brandSuggestions"
+                                                   oninput="updateModelsForCurrentRow(this)"
+                                                   onchange="checkProductByCharacteristics(this)"
+                                                   required>
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Модел</label>
+                                            <input type="text"
+                                                   th:name="'items[' + ${itemStat.index} + '].model'"
+                                                   th:value="${item.model}"
+                                                   class="status-select model-input"
+                                                   list="modelSuggestions"
+                                                   onfocus="filterModelsForCurrentRow(this)"
+                                                   onchange="checkProductByCharacteristics(this)">
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Диаметър / Размер</label>
+                                            <input type="text"
+                                                   th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
+                                                   th:value="${item.sizeOrDiameter}"
+                                                   class="status-select"
+                                                   onchange="checkProductByCharacteristics(this)">
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Количество</label>
+                                            <input type="number"
+                                                   min="1"
+                                                   th:name="'items[' + ${itemStat.index} + '].quantity'"
+                                                   th:value="${item.quantity}"
+                                                   class="status-select">
+                                        </div>
+
+                                        <div class="item-field">
+                                            <label>Цена</label>
+                                            <input type="number"
+                                                   lang="en"
+                                                   min="0"
+                                                   step="0.01"
+                                                   th:name="'items[' + ${itemStat.index} + '].salePriceAtSale'"
+                                                   th:value="${item.salePriceAtSale}"
+                                                   class="status-select"
+                                                   required>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- ПАРАМЕТРИ НА СТЪКЛОТО -->
+                                    <div class="diopter-section">
+
+                                        <div class="item-fields">
+
+                                            <div class="item-field">
+                                                <label>Око</label>
+                                                <select th:name="'items[' + ${itemStat.index} + '].eyeSide'"
+                                                        class="status-select">
+                                                    <option value="NONE"
+                                                            th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).NONE}">
+                                                        --
+                                                    </option>
+                                                    <option value="LEFT"
+                                                            th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).LEFT}">
+                                                        Ляво
+                                                    </option>
+                                                    <option value="RIGHT"
+                                                            th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).RIGHT}">
+                                                        Дясно
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>SPH</label>
+                                                <input type="number"
+                                                       lang="en"
+                                                       step="0.25"
+                                                       th:name="'items[' + ${itemStat.index} + '].sph'"
+                                                       th:value="${item.sph}"
+                                                       class="status-select"
+                                                       onchange="checkProductByCharacteristics(this)">
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>CYL</label>
+                                                <input type="number"
+                                                       lang="en"
+                                                       step="0.25"
+                                                       th:name="'items[' + ${itemStat.index} + '].cyl'"
+                                                       th:value="${item.cyl}"
+                                                       class="status-select"
+                                                       onchange="checkProductByCharacteristics(this)">
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>ADD</label>
+                                                <input type="number"
+                                                       lang="en"
+                                                       step="0.25"
+                                                       th:name="'items[' + ${itemStat.index} + '].addPower'"
+                                                       th:value="${item.addPower}"
+                                                       class="status-select"
+                                                       onchange="checkProductByCharacteristics(this)">
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>PRISM</label>
+                                                <input type="number"
+                                                       lang="en"
+                                                       step="0.25"
+                                                       th:name="'items[' + ${itemStat.index} + '].prism'"
+                                                       th:value="${item.prism}"
+                                                       class="status-select"
+                                                       onchange="checkProductByCharacteristics(this)">
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>AXIS</label>
+                                                <input type="number"
+                                                       th:name="'items[' + ${itemStat.index} + '].axis'"
+                                                       th:value="${item.axis}"
+                                                       class="status-select"
+                                                       oninput="makeAxisCyclic(this)">
+                                            </div>
+
+                                            <div class="item-field">
+                                                <label>BASE</label>
+                                                <input type="text"
+                                                       th:name="'items[' + ${itemStat.index} + '].prismBase'"
+                                                       th:value="${item.prismBase}"
+                                                       class="status-select">
+                                            </div>
+
+                                            <div class="item-actions">
+                                                <button type="button"
+                                                        onclick="removeRow(this)"
+                                                        class="btn-remove-row">
+                                                    Премахни
+                                                </button>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+
                                 </div>
 
-                                <div class="item-field">
-                                    <label>Баркод</label>
-                                    <input type="text"
-                                           th:name="'items[' + ${itemStat.index} + '].barcode'"
-                                           th:value="${item.barcode}"
-                                           class="status-select barcode-input"
-                                           placeholder="Сканирай"
-                                           onchange="autoFillByBarcode(this)"
-                                           onkeydown="handleBarcodeKeydown(event, this)">
-                                    <input type="hidden"
-                                           th:name="'items[' + ${itemStat.index} + '].productId'"
-                                           th:value="${item.productId}"
-                                           class="product-id-input">
+                            </div>
+
+                            <!-- DATALISTS -->
+                            <datalist id="brandSuggestions">
+                                <option th:each="b : ${brands}" th:value="${b}"></option>
+                            </datalist>
+
+                            <datalist id="modelSuggestions">
+                            </datalist>
+
+                            <button type="button" id="addRowBtn" class="btn-new-order">Добави продукт</button>
+                            <!-- TOTALS -->
+                            <div class="financial-box">
+
+                                <div class="financial-group">
+                                    <label>Общо</label>
+                                    <input type="number" lang="en" step="0.01" name="totalBeforeDiscount" readonly value="0">
                                 </div>
 
-                                <div class="item-field">
-                                    <label>Бранд</label>
-                                    <input type="text"
-                                           th:name="'items[' + ${itemStat.index} + '].brand'"
-                                           th:value="${item.brand}"
-                                           class="status-select brand-input"
-                                           list="brandSuggestions"
-                                           oninput="updateModelsForCurrentRow(this)"
-                                           onchange="checkProductByCharacteristics(this)">
-                                </div>
-
-                                <div class="item-field">
-                                    <label>Модел</label>
-                                    <input type="text"
-                                           th:name="'items[' + ${itemStat.index} + '].model'"
-                                           th:value="${item.model}"
-                                           class="status-select model-input"
-                                           list="modelSuggestions"
-                                           onfocus="filterModelsForCurrentRow(this)"
-                                           onchange="checkProductByCharacteristics(this)">
-                                </div>
-
-                                <div class="item-field">
-                                    <label>Диаметър / Размер</label>
-                                    <input type="text"
-                                           th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
-                                           th:value="${item.sizeOrDiameter}"
-                                           class="status-select"
-                                           onchange="checkProductByCharacteristics(this)">
-                                </div>
-
-                                <div class="item-field">
-                                    <label>Количество</label>
+                                <div class="financial-group">
+                                    <label>Отстъпка %</label>
                                     <input type="number"
-                                           min="1"
-                                           th:name="'items[' + ${itemStat.index} + '].quantity'"
-                                           th:value="${item.quantity}"
-                                           class="status-select">
+                                           lang="en"
+                                           step="1"
+                                           name="discountPercentage"
+                                           th:value="${createOrderRequest.discountPercentage != null ? createOrderRequest.discountPercentage : 0}">
                                 </div>
 
-                                <div class="item-field">
-                                    <label>Цена</label>
+                                <div class="financial-group">
+                                    <label>Крайна сума</label>
                                     <input type="number"
-                                           min="0"
+                                           lang="en"
                                            step="0.01"
-                                           th:name="'items[' + ${itemStat.index} + '].salePriceAtSale'"
-                                           th:value="${item.salePriceAtSale}"
-                                           class="status-select"
-                                           required>
+                                           name="total"
+                                           th:value="${createOrderRequest.total}">
                                 </div>
 
                             </div>
 
-                            <!-- ПАРАМЕТРИ НА СТЪКЛОТО -->
-                            <div class="diopter-section">
-
-                                <div class="diopter-title">
-                                    Параметри
-                                </div>
-
-                                <div class="item-fields">
-
-                                    <div class="item-field">
-                                        <label>Око</label>
-                                        <select th:name="'items[' + ${itemStat.index} + '].eyeSide'"
-                                                class="status-select">
-                                            <option value="NONE"
-                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).NONE}">
-                                                --
-                                            </option>
-                                            <option value="LEFT"
-                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).LEFT}">
-                                                Ляво
-                                            </option>
-                                            <option value="RIGHT"
-                                                    th:selected="${item.eyeSide == T(com.opticsappbg.opticsapp.order.model.EyeSide).RIGHT}">
-                                                Дясно
-                                            </option>
-                                        </select>
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>SPH</label>
-                                        <input type="number"
-                                               step="0.25"
-                                               th:name="'items[' + ${itemStat.index} + '].sph'"
-                                               th:value="${item.sph}"
-                                               class="status-select"
-                                               onchange="checkProductByCharacteristics(this)">
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>CYL</label>
-                                        <input type="number"
-                                               step="0.25"
-                                               th:name="'items[' + ${itemStat.index} + '].cyl'"
-                                               th:value="${item.cyl}"
-                                               class="status-select"
-                                               onchange="checkProductByCharacteristics(this)">
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>ADD</label>
-                                        <input type="number"
-                                               step="0.25"
-                                               th:name="'items[' + ${itemStat.index} + '].addPower'"
-                                               th:value="${item.addPower}"
-                                               class="status-select"
-                                               onchange="checkProductByCharacteristics(this)">
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>PRISM</label>
-                                        <input type="number"
-                                               step="0.25"
-                                               th:name="'items[' + ${itemStat.index} + '].prism'"
-                                               th:value="${item.prism}"
-                                               class="status-select"
-                                               onchange="checkProductByCharacteristics(this)">
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>AXIS</label>
-                                        <input type="number"
-                                               th:name="'items[' + ${itemStat.index} + '].axis'"
-                                               th:value="${item.axis}"
-                                               class="status-select"
-                                               oninput="makeAxisCyclic(this)">
-                                    </div>
-
-                                    <div class="item-field">
-                                        <label>BASE</label>
-                                        <input type="text"
-                                               th:name="'items[' + ${itemStat.index} + '].prismBase'"
-                                               th:value="${item.prismBase}"
-                                               class="status-select">
-                                    </div>
-
-                                    <div class="item-actions">
-                                        <button type="button"
-                                                onclick="removeRow(this)"
-                                                class="btn-open">
-                                            Премахни
-                                        </button>
-                                    </div>
-
-                                </div>
-
+                            <div class="form-actions" th:if="${readOnly != true}">
+                                <button type="submit" class="btn-new-order">Запази</button>
                             </div>
-
-
-
-                        </div>
-
-                    </div>
-
-                    <!-- DATALISTS -->
-                    <datalist id="brandSuggestions">
-                        <option th:each="b : ${brands}" th:value="${b}"></option>
-                    </datalist>
-
-                    <datalist id="modelSuggestions">
-                    </datalist>
-
-                    <button type="button" id="addRowBtn" class="btn-new-order">Добави продукт</button>
-                    <!-- TOTALS -->
-                    <div class="financial-box">
-
-                        <div class="financial-group">
-                            <label>Общо</label>
-                            <input type="number" step="0.01" name="totalBeforeDiscount" readonly value="0">
-                        </div>
-
-                        <div class="financial-group">
-                            <label>Отстъпка %</label>
-                            <input type="number"
-                                   step="1"
-                                   name="discountPercentage"
-                                   th:value="${createOrderRequest.discountPercentage != null ? createOrderRequest.discountPercentage : 0}">
-                        </div>
-
-                        <div class="financial-group">
-                            <label>Крайна сума</label>
-                            <input type="number"
-                                   step="0.01"
-                                   name="total"
-                                   th:value="${createOrderRequest.total}">
-                        </div>
-
-                    </div>
-
-                        <div class="form-actions" th:if="${readOnly != true}">
-                            <button type="submit" class="btn-new-order">Запази</button>
-                        </div>
 
                     </fieldset>
                 </form>
@@ -338,6 +362,16 @@
 </div>
 
 <script>
+    function updateItemNumbers() {
+        document.querySelectorAll('#prescriptionItems .item-row')
+            .forEach((row, index) => {
+                const number = row.querySelector('.item-number');
+                if (number) {
+                    number.textContent = `${index + 1}.`;
+                }
+            });
+    }
+
     document.getElementById('addRowBtn').addEventListener('click', function () {
 
         const container = document.getElementById('prescriptionItems');
@@ -374,51 +408,63 @@
             }
         });
 
-        newRow.querySelector('.item-header strong').textContent =
-            `Продукт ${index + 1}`;
-
         container.appendChild(newRow);
 
         toggleFieldsByCategory(
             newRow.querySelector('.category-trigger')
         );
-
+        updateItemNumbers();
         recalcBaseTotal();
     });
 
-
     function removeRow(btn) {
-
         const container = document.getElementById('prescriptionItems');
         const rows = container.querySelectorAll('.item-row');
 
         if (rows.length > 1) {
-
             btn.closest('.item-row').remove();
 
-            // Преиндексиране
+            // Преиндексиране на полетата
             container.querySelectorAll('.item-row').forEach((row, i) => {
-
-                row.querySelector('.item-header strong').textContent =
-                    `Продукт ${i + 1}`;
-
                 row.querySelectorAll('input, select').forEach(el => {
-
                     if (el.name) {
                         const field = el.name.split('.').pop();
                         el.name = `items[${i}].${field}`;
                     }
-
                 });
             });
 
+            updateItemNumbers();
             recalcBaseTotal();
 
         } else {
-
-            alert('Формата трябва да съдържа поне един продукт!');
+            showProductError('Формата трябва да съдържа поне един продукт!');
         }
     }
+
+    function validateBrands() {
+        const rows = document.querySelectorAll('#prescriptionItems .item-row');
+
+        for (let i = 0; i < rows.length; i++) {
+            const brandInput = rows[i].querySelector('.brand-input');
+
+            if (!brandInput || !brandInput.value.trim()) {
+                showProductError(
+                    `Моля, въведете бранд за продукт №${i + 1}.`
+                );
+
+                if (brandInput) {
+                    brandInput.focus();
+                }
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', updateItemNumbers);
 </script>
 
 <script>
@@ -503,7 +549,7 @@
 
         <div style="margin-top:15px; display:flex; gap:10px;">
             <button type="button" class="btn-new-order" onclick="saveCustomer()">Запази</button>
-            <button type="button" class="btn-open" onclick="closeCustomerModal()">Отказ</button>
+            <button type="button" class="btn-new-order" onclick="closeCustomerModal()">Отказ</button>
         </div>
 
     </div>
@@ -517,6 +563,82 @@
     function closeCustomerModal() {
         document.getElementById("customerModal").style.display = "none";
     }
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const select = document.getElementById('customerSelect');
+        const searchInput = document.getElementById('customerSearchInput');
+        const results = document.getElementById('customerSearchResults');
+
+        if (!select || !searchInput || !results) return;
+
+        // Показваме текущия клиент при редакция на поръчка.
+        function syncSelectedCustomer() {
+            const selectedOption = select.options[select.selectedIndex];
+
+            searchInput.value =
+                selectedOption && selectedOption.value
+                    ? selectedOption.text
+                    : '';
+        }
+
+        function renderCustomerResults() {
+            const query = searchInput.value.trim().toLocaleLowerCase('bg');
+            results.innerHTML = '';
+
+            const matches = Array.from(select.options)
+                .filter(option => {
+                    if (!option.value) return false;
+
+                    return option.text
+                        .toLocaleLowerCase('bg')
+                        .includes(query);
+                })
+                .slice(0, 10);
+
+            if (matches.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'customer-search-empty';
+                empty.textContent = 'Няма намерени клиенти';
+                results.appendChild(empty);
+            } else {
+                matches.forEach(option => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'customer-search-result';
+                    button.textContent = option.text;
+
+                    button.addEventListener('click', function () {
+                        select.value = option.value;
+                        searchInput.value = option.text;
+                        results.style.display = 'none';
+                    });
+
+                    results.appendChild(button);
+                });
+            }
+
+            results.style.display = 'block';
+        }
+
+        searchInput.addEventListener('input', function () {
+            // Не допускаме да остане избран стар клиент,
+            // докато потребителят въвежда ново търсене.
+            select.value = '';
+            renderCustomerResults();
+        });
+
+        searchInput.addEventListener('focus', renderCustomerResults);
+
+        document.addEventListener('click', function (event) {
+            if (!event.target.closest('.customer-search')) {
+                results.style.display = 'none';
+            }
+        });
+
+        syncSelectedCustomer();
+    });
+
 </script>
 
 <script>
@@ -557,7 +679,10 @@
 
                 select.appendChild(option);
                 select.value = data.id;
-                // 3. Сега вече полетата ще се изчистят успешно
+
+                document.getElementById('customerSearchInput').value = option.text;
+                document.getElementById('customerSearchResults').style.display = 'none';
+
                 document.getElementById("newCustomerName").value = "";
                 document.getElementById("newCustomerPhone").value = "";
 
@@ -842,6 +967,7 @@
             autoFillByBarcode(input);
         }
     }
+
     async function autoFillByBarcode(barcodeInput) {
 
         const barcodeValue = barcodeInput.value.trim();

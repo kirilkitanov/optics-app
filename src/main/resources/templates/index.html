@@ -44,8 +44,8 @@
                     </thead>
 
                     <tbody>
-                    <tr th:each="order : ${orders}">
-                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy HH:mm')}"></td>
+                    <tr class="order-row" th:each="order : ${orders}">
+                        <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy')}"></td>
 
                         <td th:text="${order.orderNumber}"></td>
 
@@ -81,7 +81,7 @@
 
                         <td>
                             <a th:href="@{/orders/{id}/edit(id=${order.id})}"
-                               class="btn-new-order"
+                               class="btn-table-action"
                                th:text="${order.status == T(com.opticsappbg.opticsapp.order.model.OrderStatus).CANCELLED ? 'Отвори' : 'Редакция'}">
                             </a>
                         </td>
@@ -97,6 +97,91 @@
         </section>
     </div>
 </div>
+
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const orderRows = Array.from(document.querySelectorAll('.order-row'));
+        let selectedIndex = -1;
+
+        function getVisibleRows() {
+            return orderRows.filter(function (row) {
+                return row.style.display !== 'none';
+            });
+        }
+
+        function selectRow(row) {
+            const visibleRows = getVisibleRows();
+
+            orderRows.forEach(function (item) {
+                item.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = visibleRows.indexOf(row);
+
+            if (selectedIndex >= 0) {
+                row.classList.add('order-row-selected');
+                row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        orderRows.forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest('a, select, button, input')) {
+                    return;
+                }
+
+                selectRow(row);
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            const target = event.target;
+
+            if (
+                target.matches('input, textarea, select, button') ||
+                target.isContentEditable ||
+                event.altKey ||
+                event.ctrlKey ||
+                event.metaKey
+            ) {
+                return;
+            }
+
+            const visibleRows = getVisibleRows();
+
+            if (visibleRows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+
+                if (event.key === 'ArrowDown') {
+                    selectedIndex = selectedIndex < 0
+                        ? 0
+                        : Math.min(selectedIndex + 1, visibleRows.length - 1);
+                } else {
+                    selectedIndex = selectedIndex < 0
+                        ? visibleRows.length - 1
+                        : Math.max(selectedIndex - 1, 0);
+                }
+
+                selectRow(visibleRows[selectedIndex]);
+            }
+
+            if (event.key === 'Enter' && selectedIndex >= 0) {
+                const selectedRow = visibleRows[selectedIndex];
+                const actionLink = selectedRow.querySelector('.btn-table-action');
+
+                if (actionLink) {
+                    event.preventDefault();
+                    window.location.href = actionLink.href;
+                }
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

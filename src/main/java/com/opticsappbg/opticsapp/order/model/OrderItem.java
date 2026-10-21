@@ -48,11 +48,10 @@ public class OrderItem {
     private Integer quantity;
 
     @Column(name = "purchase_price_at_sale")
-    private BigDecimal purchasePriceAtSale; // За доставната цена и маржа,
-    // копие от склада (за да не се променя историята)
+    private BigDecimal purchasePriceAtSale;
 
     @Column(name = "sale_price_at_sale", nullable = false)
-    private BigDecimal salePriceAtSale; // ЗАМРАЗЕНАТА ЦЕНА реалната продажна цена в момента
+    private BigDecimal salePriceAtSale;
 
     @Column(name = "profit_at_sale")
     private BigDecimal profitAtSale;

@@ -3,6 +3,7 @@ package com.opticsappbg.opticsapp.web;
 import com.opticsappbg.opticsapp.customer.service.CustomerService;
 import com.opticsappbg.opticsapp.order.model.Order;
 import com.opticsappbg.opticsapp.order.model.OrderStatus;
+import com.opticsappbg.opticsapp.order.service.ExcelOrderExportService;
 import com.opticsappbg.opticsapp.order.service.OrderService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.security.AuthenticationDetails;
@@ -11,12 +12,19 @@ import com.opticsappbg.opticsapp.user.service.UserService;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
+
+import java.io.IOException;
+import java.time.LocalDate;
 
 
 @Controller
@@ -28,14 +36,13 @@ public class OrderController {
     private final CustomerService customerService;
     private final UserService userService;
     private final ProductService productService;
+    private final ExcelOrderExportService excelOrderExportService;
 
     // 🔹 SHOW FORM
     @GetMapping("/new")
     public String showCreateOrderForm(Model model) {
 
-        model.addAttribute("customers", customerService.getAllCustomers());
-        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-        model.addAttribute("brands", productService.getUniqueBrandNames());
+        addOrderFormData(model);
         CreateOrderRequest request = new CreateOrderRequest();
         request.getItems().add(new CreateOrderItemRequest());
         model.addAttribute("createOrderRequest", request);
@@ -52,9 +59,7 @@ public class OrderController {
             Model model){
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("customers", customerService.getAllCustomers());
-            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-            model.addAttribute("brands", productService.getUniqueBrandNames());
+            addOrderFormData(model);
 
             model.addAttribute(
                     "productError",
@@ -76,9 +81,7 @@ public class OrderController {
 
         } catch (IllegalArgumentException e) {
 
-            model.addAttribute("customers", customerService.getAllCustomers());
-            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-            model.addAttribute("brands", productService.getUniqueBrandNames());
+            addOrderFormData(model);
             model.addAttribute("productError", e.getMessage());
 
             return "orders/new-order";
@@ -97,9 +100,7 @@ public class OrderController {
         model.addAttribute(
                 "readOnly",
                 order.getStatus() == OrderStatus.CANCELLED);
-        model.addAttribute("customers", customerService.getAllCustomers());
-        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-        model.addAttribute("brands", productService.getUniqueBrandNames());
+        addOrderFormData(model);
 
         return "orders/new-order";
     }
@@ -116,12 +117,9 @@ public class OrderController {
         }
 
         if (bindingResult.hasErrors()) {
-            Order order = orderService.getOrderById(id);
 
-            model.addAttribute("order", order);
-            model.addAttribute("customers", customerService.getAllCustomers());
-            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-            model.addAttribute("brands", productService.getUniqueBrandNames());
+            model.addAttribute("order", existingOrder);
+            addOrderFormData(model);
 
             model.addAttribute(
                     "productError",
@@ -144,9 +142,7 @@ public class OrderController {
             Order order = orderService.getOrderById(id);
 
             model.addAttribute("order", order);
-            model.addAttribute("customers", customerService.getAllCustomers());
-            model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
-            model.addAttribute("brands", productService.getUniqueBrandNames());
+            addOrderFormData(model);
             model.addAttribute("productError", e.getMessage());
 
             return "orders/new-order";
@@ -154,9 +150,24 @@ public class OrderController {
     }
 
     @GetMapping
-    public String showOrdersList(Model model) {
+    public String showOrdersList(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
 
-        model.addAttribute("orders", orderService.getAllOrders());
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+
+            Model model) {
+
+        model.addAttribute(
+                "orders",
+                orderService.getOrdersForPeriod(startDate, endDate)
+        );
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+
         return "orders/orders-list";
     }
 
@@ -166,6 +177,35 @@ public class OrderController {
         orderService.updateOrderStatus(id, status);
 
         return "redirect:/home";
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportOrders(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate) throws IOException {
+
+        byte[] excelFile = excelOrderExportService.exportExcel(startDate, endDate);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"orders.xlsx\""
+                )
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .body(excelFile);
+    }
+
+    private void addOrderFormData(Model model) {
+        model.addAttribute("customers", customerService.getAllCustomers());
+        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+        model.addAttribute("brands", productService.getUniqueBrandNames());
     }
 
 }

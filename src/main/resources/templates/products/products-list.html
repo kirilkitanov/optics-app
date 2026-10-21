@@ -1,10 +1,699 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Продукти и наличности</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+
+<div th:replace="~{header :: header-fragment}"></div>
+<div class="app-wrapper">
+    <main class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+        <section class="content product-page">
+
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Продукти и наличности</h1>
+
+                <div class="content-header-actions">
+
+                    <a th:href="@{/products/import}" class="btn-new-order"> Импорт от Excel </a>
+                    <a th:href="@{/products/export}" class="btn-new-order"> Експорт в Excel </a>
+                    <a th:href="@{/products/new}" class="btn-new-order">Нов продукт</a>
+                </div>
+            </div>
+
+            <!-- Обобщение на наличностите -->
+            <div class="product-summary">
+
+                <div class="product-summary-card">
+                    <span class="product-summary-label">Общо продукти</span>
+                    <strong id="totalProducts"
+                            th:text="${#lists.size(products)}">0</strong>
+                </div>
+
+                <div class="product-summary-card">
+                    <span class="product-summary-label">С наличност</span>
+                    <strong id="inStockProducts">0</strong>
+                </div>
+
+                <div class="product-summary-card">
+                    <span class="product-summary-label">Отрицателна наличност</span>
+                    <strong id="negativeStockProducts">0</strong>
+                </div>
+
+            </div>
+
+            <!-- Основна част на склада -->
+            <div class="product-workspace">
+
+                <!-- Списък с продукти -->
+                <div class="product-list-panel">
+
+
+                    <div class="product-toolbar">
+                        <input
+                                type="text"
+                                id="productSearch"
+                                placeholder="Общо търсене: бранд, модел, баркод..."
+                                autocomplete="off"
+                                aria-label="Общо търсене на продукти">
+
+                        <select id="categoryFilter" aria-label="Филтър по категория">
+                            <option value="">Категория</option>
+                        </select>
+
+                        <select id="brandFilter" aria-label="Филтър по бранд">
+                            <option value="">Бранд</option>
+                        </select>
+
+                        <input
+                                type="text"
+                                id="modelFilter"
+                                placeholder="Модел"
+                                autocomplete="off"
+                                aria-label="Филтър по модел">
+
+                        <input
+                                type="text"
+                                id="sphFilter"
+                                placeholder="SPH"
+                                autocomplete="off"
+                                aria-label="Филтър по сфера">
+
+                        <input
+                                type="text"
+                                id="cylFilter"
+                                placeholder="CYL"
+                                autocomplete="off"
+                                aria-label="Филтър по цилиндър">
+
+                        <input
+                                type="text"
+                                id="addFilter"
+                                placeholder="ADD"
+                                autocomplete="off"
+                                aria-label="Филтър по добавка">
+
+                        <select id="stockFilter" aria-label="Филтър по наличност">
+                            <option value="all">Всички наличности</option>
+                            <option value="in-stock">С наличност</option>
+                            <option value="zero-stock">Нулева наличност</option>
+                            <option value="negative-stock">Отрицателна наличност</option>
+                        </select>
+                    </div>
+
+                    <div class="product-table-wrapper">
+                        <table id="productsTable">
+
+                            <thead>
+                            <tr>
+                                <th>Категория</th>
+                                <th>Бранд</th>
+                                <th>Модел</th>
+                                <th>SPH</th>
+                                <th>CYL</th>
+                                <th>ADD</th>
+                                <th>Призма</th>
+                                <th>Наличност</th>
+                            </tr>
+                            </thead>
+
+                            <tbody>
+
+                            <tr th:each="product : ${products}"
+                                class="product-row"
+                                th:attr="data-product-id=${product.id},
+             data-quantity=${product.quantity != null ? product.quantity : 0}"
+                                th:onclick="|showProductDetails('${product.id}')|">
+
+                                <td th:text="${product.category != null ? product.category.displayName : '—'}">
+                                    Категория
+                                </td>
+
+                                <td th:text="${product.brand != null ? product.brand : '—'}">
+                                    Бранд
+                                </td>
+
+                                <td th:text="${product.model != null ? product.model : '—'}">
+                                    Модел
+                                </td>
+
+                                <td th:text="${product.sph != null ? product.sph : '—'}">—</td>
+
+                                <td th:text="${product.cyl != null ? product.cyl : '—'}">—</td>
+
+                                <td th:text="${product.addPower != null ? product.addPower : '—'}">—</td>
+
+                                <td th:text="${product.prism != null ? product.prism : '—'}">—</td>
+
+                                <td th:text="${product.quantity != null ? product.quantity : 0}"
+                                    th:classappend="${product.quantity != null and product.quantity < 0}
+                        ? ' stock-negative' : ''">
+                                    0
+                                </td>
+                            </tr>
+
+                            <tr th:if="${#lists.isEmpty(products)}">
+                                <td colspan="8" class="empty-products">
+                                    Няма добавени продукти.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+
+                        <p id="noSearchResults" class="empty-products" hidden>
+                            Няма продукти, отговарящи на търсенето.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Подробности за избрания продукт -->
+                <aside class="product-details-panel" id="productDetailsPanel">
+
+                    <div id="noProductSelected" class="product-details-empty">
+                        <h2>Детайли за продукта</h2>
+                        <p>Избери продукт от списъка, за да видиш подробностите му.</p>
+                    </div>
+
+                    <div id="selectedProductDetails" hidden>
+
+                        <div class="product-details-heading">
+                            <div>
+                                <span class="product-details-eyebrow">Избран продукт</span>
+                                <h2 id="detailProductName">—</h2>
+                                <p id="detailProductCategory">—</p>
+                            </div>
+                        </div>
+
+                        <div class="product-detail-grid">
+
+                            <div class="product-detail-item">
+                                <span>Баркод</span>
+                                <strong id="detailBarcode">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>Наличност</span>
+                                <strong id="detailQuantity">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>Продажна цена</span>
+                                <strong id="detailRetailPrice">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>Доставна цена</span>
+                                <strong id="detailPurchasePrice">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>Размер / диаметър</span>
+                                <strong id="detailSize">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>SPH</span>
+                                <strong id="detailSph">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>CYL</span>
+                                <strong id="detailCyl">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>ADD</span>
+                                <strong id="detailAddPower">—</strong>
+                            </div>
+
+                            <div class="product-detail-item">
+                                <span>Призма</span>
+                                <strong id="detailPrism">—</strong>
+                            </div>
+
+                        </div>
+
+                        <div class="product-detail-note">
+                            <span>Бележка</span>
+                            <p id="detailNote">Няма добавена бележка.</p>
+                        </div>
+
+                        <div class="product-detail-actions">
+                            <button type="button"
+                                    class="btn-product-action"
+                                    id="editProductButton">
+                                Редакция на продукта
+                            </button>
+
+                            <button type="button"
+                                    class="btn-product-action btn-stock-action"
+                                    id="adjustStockButton">
+                                Корекция на наличността
+                            </button>
+                        </div>
+                    </div>
+                </aside>
+
+            </div>
+        </section>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const products = /*[[${products}]]*/ [];
+    const initialSelectedProductId =
+        /*[[${selectedProductId}]]*/ null;
+
+    const productSearch = document.getElementById('productSearch');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const brandFilter = document.getElementById('brandFilter');
+    const modelFilter = document.getElementById('modelFilter');
+    const sphFilter = document.getElementById('sphFilter');
+    const cylFilter = document.getElementById('cylFilter');
+    const addFilter = document.getElementById('addFilter');
+    const stockFilter = document.getElementById('stockFilter');
+
+    const productRows = document.querySelectorAll(
+        '#productsTable tbody tr.product-row'
+    );
+
+    const noSearchResults = document.getElementById('noSearchResults');
+
+    const noProductSelected = document.getElementById('noProductSelected');
+    const selectedProductDetails = document.getElementById('selectedProductDetails');
+
+    let selectedProductId = null;
+
+
+    function formatPrice(value) {
+        if (value === null || value === undefined || value === '') {
+            return '—';
+        }
+        const number = Number(value);
+        if (!Number.isFinite(number)) {
+            return '—';
+        }
+        return number.toFixed(2) + ' EUR';
+    }
+
+    function displayValue(value) {
+        return value === null || value === undefined || value === ''
+            ? '—'
+            : value;
+    }
+
+    function showProductDetails(productId) {
+        const product = products.find(
+            item => String(item.id) === String(productId)
+        );
+
+        if (!product) {
+            return;
+        }
+
+        selectedProductId = product.id;
+
+        noProductSelected.hidden = true;
+        selectedProductDetails.hidden = false;
+
+        document.getElementById('detailProductName').textContent =
+            [product.brand, product.model].filter(Boolean).join(' ') || 'Без име';
+
+        document.getElementById('detailProductCategory').textContent =
+            product.category && product.category.displayName
+                ? product.category.displayName
+                : displayValue(product.category);
+
+        document.getElementById('detailBarcode').textContent =
+            displayValue(product.barcode);
+
+        document.getElementById('detailQuantity').textContent =
+            displayValue(product.quantity ?? 0);
+
+        document.getElementById('detailRetailPrice').textContent =
+            formatPrice(product.retailPrice);
+
+        document.getElementById('detailPurchasePrice').textContent =
+            formatPrice(product.purchasePrice);
+
+        document.getElementById('detailSize').textContent =
+            displayValue(product.sizeOrDiameter);
+
+        document.getElementById('detailSph').textContent =
+            displayValue(product.sph);
+
+        document.getElementById('detailCyl').textContent =
+            displayValue(product.cyl);
+
+        document.getElementById('detailAddPower').textContent =
+            displayValue(product.addPower);
+
+        document.getElementById('detailPrism').textContent =
+            displayValue(product.prism);
+
+        document.getElementById('detailNote').textContent =
+            product.note || 'Няма добавена бележка.';
+
+        productRows.forEach(row => {
+            row.classList.toggle(
+                'product-row-selected',
+                String(row.dataset.productId) === String(productId)
+            );
+        });
+    }
+
+
+    function normalizeText(value) {
+        return String(value ?? '').trim().toLocaleLowerCase('bg-BG');
+    }
+
+    function getCategoryName(product) {
+        return product.category && product.category.displayName
+            ? product.category.displayName
+            : String(product.category ?? '');
+    }
+
+    function numericMatches(value, filterValue) {
+        const filter = String(filterValue ?? '').trim();
+
+        if (!filter) {
+            return true;
+        }
+
+        if (value === null || value === undefined || value === '') {
+            return false;
+        }
+
+        const actualText = String(value).replace(',', '.').trim();
+        const filterText = filter.replace(',', '.').trim();
+
+        const actualNumber = Number(actualText);
+        const filterNumber = Number(filterText);
+
+        if (Number.isFinite(actualNumber) && Number.isFinite(filterNumber)) {
+            return Math.abs(actualNumber - filterNumber) < 0.000001;
+        }
+
+        return normalizeText(actualText).includes(normalizeText(filterText));
+    }
+
+
+    function populateProductFilters() {
+        updateDynamicFilters();
+    }
+
+    function matchesProduct(product, excludedFilter = null) {
+        const searchText = normalizeText(productSearch.value);
+
+        const searchableValues = [
+            getCategoryName(product),
+            product.brand,
+            product.model,
+            product.barcode,
+            product.sph,
+            product.cyl,
+            product.addPower,
+            product.prism,
+            product.sizeOrDiameter
+        ];
+
+        if (
+            excludedFilter !== 'search' &&
+            searchText &&
+            !searchableValues.some(value =>
+                normalizeText(value).includes(searchText)
+            )
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'category' &&
+            categoryFilter.value &&
+            getCategoryName(product) !== categoryFilter.value
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'brand' &&
+            brandFilter.value &&
+            String(product.brand ?? '').trim() !== brandFilter.value
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'model' &&
+            normalizeText(modelFilter.value) &&
+            !normalizeText(product.model).includes(normalizeText(modelFilter.value))
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'sph' &&
+            !numericMatches(product.sph, sphFilter.value)
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'cyl' &&
+            !numericMatches(product.cyl, cylFilter.value)
+        ) {
+            return false;
+        }
+
+        if (
+            excludedFilter !== 'add' &&
+            !numericMatches(product.addPower, addFilter.value)
+        ) {
+            return false;
+        }
+
+        if (excludedFilter !== 'stock') {
+            const quantity = Number(product.quantity ?? 0);
+
+            if (stockFilter.value === 'in-stock' && quantity <= 0) return false;
+            if (stockFilter.value === 'zero-stock' && quantity !== 0) return false;
+            if (stockFilter.value === 'negative-stock' && quantity >= 0) return false;
+        }
+
+        return true;
+    }
+
+    function updateSelectOptions(element, values) {
+        if (element.tagName !== 'SELECT') {
+            return false;
+        }
+
+        const currentValue = element.value;
+        const uniqueValues = [...new Set(values.filter(value => value !== ''))]
+            .sort((a, b) => a.localeCompare(b, 'bg'));
+
+        const validSelection = uniqueValues.includes(currentValue)
+            ? currentValue
+            : '';
+
+        element.querySelectorAll('option:not([value=""])').forEach(option => {
+            option.remove();
+        });
+
+        uniqueValues.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            element.appendChild(option);
+        });
+
+        element.value = validSelection;
+
+        return currentValue !== validSelection;
+    }
+
+
+    function updateDynamicFilters() {
+        let changed = false;
+
+        const filterDefinitions = [
+            {
+                key: 'category',
+                element: categoryFilter,
+                getValue: product => getCategoryName(product)
+            },
+            {
+                key: 'brand',
+                element: brandFilter,
+                getValue: product => String(product.brand ?? '').trim()
+            }
+        ];
+
+        filterDefinitions.forEach(definition => {
+            const candidates = products.filter(product =>
+                matchesProduct(product, definition.key)
+            );
+
+            const values = candidates
+                .map(definition.getValue)
+                .map(value => String(value ?? '').trim())
+                .filter(Boolean);
+
+            if (updateSelectOptions(definition.element, values)) {
+                changed = true;
+            }
+        });
+
+        return changed;
+    }
+
+    let syncingDynamicFilters = false;
+
+    function filterProducts() {
+        if (!syncingDynamicFilters) {
+            syncingDynamicFilters = true;
+            const changed = updateDynamicFilters();
+            syncingDynamicFilters = false;
+
+            if (changed) {
+                filterProducts();
+                return;
+            }
+        }
+
+        let visibleCount = 0;
+
+        productRows.forEach(row => {
+            const product = products.find(
+                item => String(item.id) === String(row.dataset.productId)
+            );
+
+            const visible = product && matchesProduct(product);
+            row.hidden = !visible;
+
+            if (visible) {
+                visibleCount++;
+            }
+        });
+
+        noSearchResults.hidden = visibleCount !== 0;
+
+        if (selectedProductId !== null) {
+            const selectedRow = Array.from(productRows).find(
+                row => String(row.dataset.productId) === String(selectedProductId)
+            );
+
+            if (selectedRow && selectedRow.hidden) {
+                selectedProductId = null;
+                noProductSelected.hidden = false;
+                selectedProductDetails.hidden = true;
+            }
+        }
+    }
+
+    populateProductFilters();
+
+    [
+        productSearch,
+        categoryFilter,
+        brandFilter,
+        modelFilter,
+        sphFilter,
+        cylFilter,
+        addFilter
+    ].forEach(element => {
+        element.addEventListener('input', filterProducts);
+        element.addEventListener('change', filterProducts);
+    });
+
+    stockFilter.addEventListener('change', filterProducts);
+
+    const totalProducts = products.length;
+    const inStockProducts = products.filter(
+        product => Number(product.quantity ?? 0) > 0
+    ).length;
+    const negativeStockProducts = products.filter(
+        product => Number(product.quantity ?? 0) < 0
+    ).length;
+
+    document.getElementById('totalProducts').textContent = totalProducts;
+    document.getElementById('inStockProducts').textContent = inStockProducts;
+    document.getElementById('negativeStockProducts').textContent = negativeStockProducts;
+
+    document.getElementById('editProductButton').addEventListener('click', function () {
+        if (selectedProductId !== null) {
+            window.location.href = '/products/' + selectedProductId + '/edit';
+        }
+    });
+
+    document.getElementById('adjustStockButton').addEventListener('click', function () {
+        if (selectedProductId !== null) {
+            window.location.href = '/products/' + selectedProductId + '/stock';
+        }
+    });
+
+    // Навигация между продуктите със стрелките на клавиатурата
+    document.addEventListener('keydown', function (event) {
+
+        // Не прихващаме стрелките, когато се пише или избира
+        // стойност в поле за въвеждане или падащ списък.
+        const tag = event.target.tagName;
+
+        if (
+            ['INPUT', 'SELECT', 'TEXTAREA'].includes(tag) ||
+            event.target.isContentEditable
+        ) {
+            return;
+        }
+
+        if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+            return;
+        }
+
+        const visibleRows = Array.from(productRows).filter(row =>
+            !row.hidden
+        );
+
+        if (visibleRows.length === 0) {
+            return;
+        }
+
+        event.preventDefault();
+
+        let currentIndex = visibleRows.findIndex(row =>
+            String(row.dataset.productId) === String(selectedProductId)
+        );
+
+        if (event.key === 'ArrowDown') {
+            currentIndex = currentIndex < 0
+                ? 0
+                : Math.min(currentIndex + 1, visibleRows.length - 1);
+        } else {
+            currentIndex = currentIndex < 0
+                ? visibleRows.length - 1
+                : Math.max(currentIndex - 1, 0);
+        }
+
+        const selectedRow = visibleRows[currentIndex];
+
+        showProductDetails(selectedRow.dataset.productId);
+
+        selectedRow.scrollIntoView({
+            block: 'nearest',
+            behavior: 'auto'
+        });
+    });
+    // Автоматично избира продукта след редакция.
+    if (initialSelectedProductId !== null) {
+        showProductDetails(initialSelectedProductId);
+    }
+</script>
+
 </body>
 </html>

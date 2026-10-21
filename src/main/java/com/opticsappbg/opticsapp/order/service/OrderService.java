@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -39,8 +40,8 @@ public class OrderService {
         order.setCreatedBy(user);
         order.setNote(request.getNote());
 
-        String generatedOrderNumber = "ORD-" + LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyMMdd-HHmm"));
+        String generatedOrderNumber = "O-" + LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyMMdd-HHmmss"));
         order.setOrderNumber(generatedOrderNumber);
 
         addItemsToOrder(order, request);
@@ -72,6 +73,13 @@ public class OrderService {
 
     private void addItemsToOrder(Order order, CreateOrderRequest request) {
         for (CreateOrderItemRequest itemReq : request.getItems()) {
+
+            if (itemReq.getBrand() == null || itemReq.getBrand().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Моля, въведете бранд за всеки продукт в поръчката."
+                );
+            }
+
             Product product = productService.findOrCreate(itemReq);
             OrderItem item = buildItem(itemReq, product);
             item.setOrder(order);
@@ -80,12 +88,54 @@ public class OrderService {
     }
 
     public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+        return orderRepository.findAllByOrderByCreatedOnDesc();
     }
 
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
+    }
+
+    public List<Order> getOrdersByPeriod(
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+
+        LocalDateTime endDateTime = endDate
+                .plusDays(1)
+                .atStartOfDay()
+                .minusNanos(1);
+
+        return orderRepository.findByCreatedOnBetweenOrderByCreatedOnDesc(
+                startDateTime,
+                endDateTime
+        );
+    }
+
+    public List<Order> getOrdersForPeriod(
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        if (startDate == null && endDate == null) {
+            return getAllOrders();
+        }
+
+        if (startDate == null) {
+            return orderRepository
+                    .findByCreatedOnLessThanOrderByCreatedOnDesc(
+                            endDate.plusDays(1).atStartOfDay()
+                    );
+        }
+
+        if (endDate == null) {
+            return orderRepository
+                    .findByCreatedOnGreaterThanEqualOrderByCreatedOnDesc(
+                            startDate.atStartOfDay()
+                    );
+        }
+
+        return getOrdersByPeriod(startDate, endDate);
     }
 
     public CreateOrderRequest buildEditRequest(Order order) {
@@ -129,26 +179,6 @@ public class OrderService {
         return request;
     }
 
-//    @Transactional
-//    public void updateOrder(Long id, CreateOrderRequest request) {
-//
-//        Order order = orderRepository.findById(id)
-//                .orElseThrow(() -> new RuntimeException("Order not found"));
-//
-//        order.setCustomer(
-//                customerRepository.findById(request.getCustomerId())
-//                        .orElseThrow(() -> new RuntimeException("Customer not found"))
-//        );
-//        order.setNote(request.getNote());
-//
-//        order.getItems().clear();
-//        addItemsToOrder(order, request);
-//        pricingService.calculate(order, request);
-//        order.setUpdatedOn(LocalDateTime.now());
-//
-//        orderRepository.save(order);
-//    }
-
     @Transactional
     public void updateOrder(Long id, CreateOrderRequest request) {
 
@@ -160,13 +190,18 @@ public class OrderService {
                     "Анулирана поръчка не може да бъде редактирана."
             );
         }
+
+        // Запазваме старите редове, преди да бъдат премахнати.
+        List<OrderItem> previousItems = new java.util.ArrayList<>(order.getItems());
+
         // Връщаме старите количества в склада.
-        for (OrderItem item : order.getItems()) {
+        for (OrderItem item : previousItems) {
             productService.adjustQuantity(
                     item.getProduct().getId(),
                     item.getQuantity()
             );
         }
+
         order.setCustomer(
                 customerRepository.findById(request.getCustomerId())
                         .orElseThrow(() -> new RuntimeException("Customer not found"))
@@ -174,9 +209,32 @@ public class OrderService {
 
         order.setNote(request.getNote());
 
+        // Премахваме старите редове и изграждаме актуализираните.
         order.getItems().clear();
         addItemsToOrder(order, request);
-        // Изписваме новите количества.
+
+        // Запазваме историческата доставна цена за продуктите,
+        // които вече са присъствали в поръчката.
+        for (OrderItem newItem : order.getItems()) {
+
+            for (int i = 0; i < previousItems.size(); i++) {
+                OrderItem oldItem = previousItems.get(i);
+
+                if (oldItem.getProduct().getId()
+                        .equals(newItem.getProduct().getId())) {
+
+                    newItem.setPurchasePriceAtSale(
+                            oldItem.getPurchasePriceAtSale()
+                    );
+
+                    // Всеки стар ред може да бъде използван само веднъж.
+                    previousItems.remove(i);
+                    break;
+                }
+            }
+        }
+
+        // Изписваме новите количества от склада.
         for (OrderItem item : order.getItems()) {
             productService.adjustQuantity(
                     item.getProduct().getId(),
@@ -222,6 +280,8 @@ public class OrderService {
                         item.getProduct().getId(),
                         item.getQuantity()
                 );
+
+                item.setProfitAtSale(null);
             }
         }
 
