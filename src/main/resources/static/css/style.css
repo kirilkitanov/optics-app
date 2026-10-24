@@ -1290,7 +1290,11 @@ body > .app-wrapper > .main-container > .product-page {
     min-height: 0;
 }
 
-
+.status-cancelled {color: #c62828;}
+.status-completed {color: #218838;}
+.status-ready-pickup {color: #e87500;}
+.status-waiting-lenses {color: #0f488d;}
+.status-ready-for-craft {color: #7b1fa2;}
 
 
 

@@ -1,4 +1,4 @@
-package com.opticsappbg.opticsapp.product.dto;
+package com.opticsappbg.opticsapp.web.dto;
 
 public record StockAdjustmentResponse(
         boolean changed,

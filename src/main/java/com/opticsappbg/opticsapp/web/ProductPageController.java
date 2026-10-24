@@ -3,10 +3,15 @@ package com.opticsappbg.opticsapp.web;
 import com.opticsappbg.opticsapp.product.service.ExcelProductExportService;
 import com.opticsappbg.opticsapp.product.service.ExcelProductImportService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
+import com.opticsappbg.opticsapp.product.service.StockAdjustmentService;
+import com.opticsappbg.opticsapp.security.AuthenticationDetails;
+import com.opticsappbg.opticsapp.web.dto.StockAdjustmentRequest;
+import com.opticsappbg.opticsapp.web.dto.StockAdjustmentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +30,7 @@ public class ProductPageController {
     private final ProductService productService;
     private final ExcelProductImportService excelProductImportService;
     private final ExcelProductExportService excelProductExportService;
+    private final StockAdjustmentService stockAdjustmentService;
 
     @GetMapping
     public String productsPage(
@@ -174,5 +180,20 @@ public class ProductPageController {
                 .contentLength(file.length)
                 .body(file);
     }
+
+    @PostMapping("/{id}/stock-adjustments")
+    @ResponseBody
+    public StockAdjustmentResponse adjustStock(
+            @PathVariable Long id,
+            @RequestBody StockAdjustmentRequest request,
+            @AuthenticationPrincipal AuthenticationDetails details) {
+
+        return stockAdjustmentService.adjustStock(
+                id,
+                request,
+                details.getUserId()
+        );
+    }
+
 }
 

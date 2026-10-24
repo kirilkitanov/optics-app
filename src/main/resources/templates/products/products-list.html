@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Продукти и наличности</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
+
+    <meta th:name="_csrf" th:content="${_csrf.token}">
+    <meta th:name="_csrf_header" th:content="${_csrf.headerName}">
 </head>
 <body>
 
@@ -263,6 +266,74 @@
             </div>
         </section>
     </main>
+</div>
+
+<!-- Модален прозорец за корекция на наличността -->
+<div id="stockAdjustmentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h2>Корекция на наличността</h2>
+
+        <p>
+            Продукт:
+            <strong id="stockAdjustmentProductName">—</strong>
+        </p>
+
+        <label for="currentStockQuantity">
+            Текуща системна наличност
+        </label>
+        <input
+                type="number"
+                id="currentStockQuantity"
+                readonly>
+
+        <label for="countedStockQuantity">
+            Физически преброено количество
+        </label>
+        <input
+                type="number"
+                id="countedStockQuantity"
+                step="1"
+                placeholder="Остави празно без промяна">
+
+        <label for="stockDifference">
+            Разлика
+        </label>
+        <input
+                type="number"
+                id="stockDifference"
+                readonly
+                value="0">
+
+        <label for="stockAdjustmentReason">
+            Причина за корекцията (незадължително)
+        </label>
+        <input
+                type="text"
+                id="stockAdjustmentReason"
+                maxlength="500"
+                placeholder="Например: физическа инвентаризация">
+
+        <p id="stockAdjustmentMessage"
+           role="status"
+           style="display: none; margin-top: 10px;">
+        </p>
+
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button
+                    type="button"
+                    class="btn-new-order"
+                    id="saveStockAdjustmentButton">
+                Запази корекцията
+            </button>
+
+            <button
+                    type="button"
+                    class="btn-new-order"
+                    id="cancelStockAdjustmentButton">
+                Отказ
+            </button>
+        </div>
+    </div>
 </div>
 
 <script th:inline="javascript">
@@ -632,9 +703,218 @@
         }
     });
 
-    document.getElementById('adjustStockButton').addEventListener('click', function () {
-        if (selectedProductId !== null) {
-            window.location.href = '/products/' + selectedProductId + '/stock';
+
+    const stockAdjustmentModal =
+        document.getElementById('stockAdjustmentModal');
+
+    const currentStockQuantity =
+        document.getElementById('currentStockQuantity');
+
+    const countedStockQuantity =
+        document.getElementById('countedStockQuantity');
+
+    const stockDifference =
+        document.getElementById('stockDifference');
+
+    const stockAdjustmentReason =
+        document.getElementById('stockAdjustmentReason');
+
+    const stockAdjustmentMessage =
+        document.getElementById('stockAdjustmentMessage');
+
+    const saveStockAdjustmentButton =
+        document.getElementById('saveStockAdjustmentButton');
+
+
+    function showStockAdjustmentMessage(message, isError = false) {
+        stockAdjustmentMessage.textContent = message;
+        stockAdjustmentMessage.style.display = 'block';
+        stockAdjustmentMessage.style.color = isError ? '#b42318' : '#18794e';
+    }
+
+
+    function openStockAdjustmentModal() {
+        if (selectedProductId === null) {
+            return;
+        }
+
+        const product = products.find(
+            item => String(item.id) === String(selectedProductId)
+        );
+
+        if (!product) {
+            return;
+        }
+
+        const quantity = Number(product.quantity ?? 0);
+
+        document.getElementById('stockAdjustmentProductName').textContent =
+            [product.brand, product.model].filter(Boolean).join(' ') || 'Без име';
+
+        currentStockQuantity.value = quantity;
+        countedStockQuantity.value = '';
+        stockDifference.value = '0';
+        stockAdjustmentReason.value = '';
+
+        stockAdjustmentMessage.textContent = '';
+        stockAdjustmentMessage.style.display = 'none';
+
+        saveStockAdjustmentButton.disabled = false;
+        saveStockAdjustmentButton.textContent = 'Запази корекцията';
+
+        stockAdjustmentModal.style.display = 'flex';
+        countedStockQuantity.focus();
+    }
+
+
+    function closeStockAdjustmentModal() {
+        stockAdjustmentModal.style.display = 'none';
+    }
+
+
+    document.getElementById('adjustStockButton')
+        .addEventListener('click', openStockAdjustmentModal);
+
+    document.getElementById('cancelStockAdjustmentButton')
+        .addEventListener('click', closeStockAdjustmentModal);
+
+
+    // Изчисляваме разликата при въвеждане на преброеното количество.
+    countedStockQuantity.addEventListener('input', function () {
+        const value = countedStockQuantity.value.trim();
+
+        if (value === '') {
+            stockDifference.value = '0';
+            return;
+        }
+
+        const newQuantity = Number(value);
+
+        if (!Number.isInteger(newQuantity)) {
+            stockDifference.value = '';
+            return;
+        }
+
+        stockDifference.value =
+            newQuantity - Number(currentStockQuantity.value);
+    });
+
+
+    // Обновяваме обобщените стойности след успешна корекция.
+    function updateStockSummary() {
+        document.getElementById('totalProducts').textContent = products.length;
+
+        document.getElementById('inStockProducts').textContent =
+            products.filter(product => Number(product.quantity ?? 0) > 0).length;
+
+        document.getElementById('negativeStockProducts').textContent =
+            products.filter(product => Number(product.quantity ?? 0) < 0).length;
+    }
+
+    // Записваме корекцията чрез вече създадения Spring endpoint.
+    saveStockAdjustmentButton.addEventListener('click', async function () {
+        if (selectedProductId === null) {
+            return;
+        }
+
+        const enteredQuantity = countedStockQuantity.value.trim();
+
+        let newQuantity = null;
+
+        if (enteredQuantity !== '') {
+            newQuantity = Number(enteredQuantity);
+
+            if (!Number.isInteger(newQuantity)) {
+                showStockAdjustmentMessage(
+                    'Въведи цяло число за наличността.',
+                    true
+                );
+                return;
+            }
+        }
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+
+        if (!csrfToken || !csrfHeader) {
+            showStockAdjustmentMessage(
+                'Липсва CSRF токен. Презареди страницата и опитай отново.',
+                true
+            );
+            return;
+        }
+
+        saveStockAdjustmentButton.disabled = true;
+        saveStockAdjustmentButton.textContent = 'Записване...';
+
+        try {
+            const response = await fetch(
+                `/products/${selectedProductId}/stock-adjustments`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        [csrfHeader]: csrfToken
+                    },
+                    body: JSON.stringify({
+                        newQuantity: newQuantity,
+                        reason: stockAdjustmentReason.value.trim() || null
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Възникна грешка при корекцията.');
+            }
+
+            if (!data.changed) {
+                showStockAdjustmentMessage(data.message || 'Няма промяна в наличността.');
+                return;
+            }
+
+            // Обновяваме продукта в масива, използван от търсенето и филтрите.
+            const product = products.find(
+                item => String(item.id) === String(data.productId)
+            );
+
+            if (product) {
+                product.quantity = data.newQuantity;
+            }
+
+            // Обновяваме реда в таблицата.
+            const row = Array.from(productRows).find(
+                item => String(item.dataset.productId) === String(data.productId)
+            );
+
+            if (row) {
+                row.dataset.quantity = data.newQuantity;
+
+                const quantityCell = row.cells[row.cells.length - 1];
+
+                quantityCell.textContent = data.newQuantity;
+                quantityCell.classList.toggle(
+                    'stock-negative',
+                    data.newQuantity < 0
+                );
+            }
+
+            // Обновяваме детайлите, филтрите и обобщените стойности.
+            showProductDetails(data.productId);
+            updateStockSummary();
+            filterProducts();
+
+            closeStockAdjustmentModal();
+
+        } catch (error) {
+            showStockAdjustmentMessage(
+                error.message || 'Възникна неочаквана грешка.',
+                true
+            );
+        } finally {
+            saveStockAdjustmentButton.disabled = false;
+            saveStockAdjustmentButton.textContent = 'Запази корекцията';
         }
     });
 

@@ -37,9 +37,10 @@
                         <th>Действие</th>
                     </tr>
                     </thead>
-
                     <tbody>
+
                     <tr class="order-row" th:each="order : ${orders}">
+
                         <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy')}"></td>
 
                         <td th:text="${order.orderNumber}"></td>
@@ -50,7 +51,15 @@
 
                         <td th:text="${#numbers.formatDecimal(order.total, 1, 'COMMA', 2, 'POINT') + ' EUR.'}"></td>
 
-                        <td th:text="${order.status.displayName}"></td>
+                        <td>
+                            <span th:text="${order.status.displayName}"
+                                  th:classappend="${order.status.name() == 'CANCELLED'} ? ' status-cancelled' :
+                                                  (${order.status.name() == 'COMPLETED'} ? ' status-completed' :
+                                                  (${order.status.name() == 'READY_FOR_PICKUP'} ? ' status-ready-pickup' :
+                                                  (${order.status.name() == 'WAITING_LENSES'} ? ' status-waiting-lenses' :
+                                                  (${order.status.name() == 'READY_FOR_CRAFT'} ? ' status-ready-for-craft' : ''))))">
+                            </span>
+                        </td>
 
 
                         <td>

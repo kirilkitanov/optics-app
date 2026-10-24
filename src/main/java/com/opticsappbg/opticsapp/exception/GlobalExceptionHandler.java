@@ -1,4 +1,4 @@
-package com.opticsappbg.opticsapp.web;
+package com.opticsappbg.opticsapp.exception;
 
 import com.opticsappbg.opticsapp.product.service.StockAdjustmentException;
 import org.springframework.http.HttpStatus;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
-@RestControllerAdvice(assignableTypes = ProductPageController.class)
-public class StockAdjustmentExceptionHandler {
+@RestControllerAdvice
+public class GlobalExceptionHandler {
 
     @ExceptionHandler(StockAdjustmentException.class)
     public ResponseEntity<Map<String, String>> handleStockAdjustmentException(
@@ -20,4 +20,3 @@ public class StockAdjustmentExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 }
-
