@@ -22,6 +22,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import org.springframework.validation.BindingResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -159,14 +161,48 @@ public class OrderController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate endDate,
 
+            @RequestParam(required = false)
+            String search,
+
+            @RequestParam(defaultValue = "0")
+            int page,
+
             Model model) {
 
-        model.addAttribute(
-                "orders",
-                orderService.getOrdersForPeriod(startDate, endDate)
+        int pageSize = 10;
+
+        if (page < 0) {
+            page = 0;
+        }
+
+        Page<Order> ordersPage = orderService.searchOrders(
+                search,
+                startDate,
+                endDate,
+                PageRequest.of(page, pageSize)
         );
+
+        if (ordersPage.getTotalPages() > 0
+                && page >= ordersPage.getTotalPages()) {
+
+            page = ordersPage.getTotalPages() - 1;
+
+            ordersPage = orderService.searchOrders(
+                    search,
+                    startDate,
+                    endDate,
+                    PageRequest.of(page, pageSize)
+            );
+        }
+
+        model.addAttribute("orders", ordersPage.getContent());
+        model.addAttribute("ordersPage", ordersPage);
+        model.addAttribute("currentPage", page);
+        model.addAttribute("totalPages", ordersPage.getTotalPages());
+
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
+        model.addAttribute("search", search);
 
         return "orders/orders-list";
     }

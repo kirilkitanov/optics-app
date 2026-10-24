@@ -35,8 +35,6 @@ public class ProductService {
             barcode = null;
         }
 
-// Ако има избран Product, първо проверяваме дали
-// характеристиките все още съответстват на него.
         if (req.getProductId() != null) {
 
             Product selectedProduct = productRepository.findById(req.getProductId())
@@ -60,24 +58,14 @@ public class ProductService {
                             && selectedProduct.getPrism().compareTo(req.getPrism()) == 0;
 
             if (sameCharacteristics) {
-
-                // Характеристиките са същите.
-                // Ако и баркодът е същият, използваме избрания Product.
                 if (java.util.Objects.equals(
                         selectedProduct.getBarcode(),
                         barcode
                 )) {
                     return selectedProduct;
                 }
-
-                // Характеристиките са същите, но е въведен друг баркод.
-                // Старият Product не се променя.
-                // Продължаваме надолу, за да обработим новия баркод.
             }
 
-// Характеристиките са променени.
-// Ако баркодът все още е старият баркод на продукта,
-// той вече не трябва да се използва.
             if (java.util.Objects.equals(
                     selectedProduct.getBarcode(),
                     barcode
@@ -86,7 +74,6 @@ public class ProductService {
             }
         }
 
-        // 1. Ако е въведен баркод, той трябва да е уникален.
         if (barcode != null) {
 
             Optional<Product> productWithBarcode =
@@ -117,8 +104,6 @@ public class ProductService {
                 );
             }
 
-            // Баркодът е нов. Преди създаване проверяваме
-            // дали вече има продукт със същите характеристики.
             List<Product> matchingProducts =
                     productRepository.findProductsByCharacteristics(
                             req.getCategory(),
@@ -136,29 +121,9 @@ public class ProductService {
                         describeDuplicateProducts(matchingProducts));
             }
 
-            Product newProduct = new Product();
-
-            newProduct.setCategory(req.getCategory());
-            newProduct.setBarcode(barcode);
-            newProduct.setBrand(req.getBrand());
-            newProduct.setModel(req.getModel());
-            newProduct.setSizeOrDiameter(req.getSizeOrDiameter());
-
-            newProduct.setSph(req.getSph());
-            newProduct.setCyl(req.getCyl());
-            newProduct.setAddPower(req.getAddPower());
-            newProduct.setPrism(req.getPrism());
-
-            newProduct.setCreatedOn(java.time.LocalDateTime.now());
-            newProduct.setPurchasePrice(null);
-            newProduct.setQuantity(0);
-            newProduct.setRetailPrice(req.getSalePriceAtSale());
-
-            return productRepository.save(newProduct);
-
+            return createProductFromRequest(req, barcode);
         }
-        // 2. Няма баркод.
-        // Търсим по характеристиките.
+
         List<Product> products =
                 productRepository.findProductsByCharacteristics(
                         req.getCategory(),
@@ -171,40 +136,43 @@ public class ProductService {
                         req.getPrism()
                 );
 
-        // Няма съществуващ продукт -> създаваме нов без баркод.
         if (products.isEmpty()) {
-            Product newProduct = new Product();
-
-            newProduct.setCategory(req.getCategory());
-            newProduct.setBarcode(null);
-            newProduct.setBrand(req.getBrand());
-            newProduct.setModel(req.getModel());
-            newProduct.setSizeOrDiameter(req.getSizeOrDiameter());
-
-            newProduct.setSph(req.getSph());
-            newProduct.setCyl(req.getCyl());
-            newProduct.setAddPower(req.getAddPower());
-            newProduct.setPrism(req.getPrism());
-
-            newProduct.setCreatedOn(java.time.LocalDateTime.now());
-            newProduct.setPurchasePrice(null);
-            newProduct.setQuantity(0);
-            newProduct.setRetailPrice(req.getSalePriceAtSale());
-
-            return productRepository.save(newProduct);
+            return createProductFromRequest(req, null);
         }
 
-        // Има точно един продукт -> използваме него.
         if (products.size() == 1) {
             return products.get(0);
         }
 
-        // Има няколко продукта с еднакви характеристики.
-        // Без productId няма как да изберем правилния.
         throw new IllegalArgumentException(
                 "Намерени са няколко продукта с тези характеристики. " +
                         "Моля, изберете продукт чрез баркода."
         );
+    }
+
+    private Product createProductFromRequest(
+            CreateOrderItemRequest req,
+            String barcode) {
+
+        Product newProduct = new Product();
+
+        newProduct.setCategory(req.getCategory());
+        newProduct.setBarcode(barcode);
+        newProduct.setBrand(req.getBrand());
+        newProduct.setModel(req.getModel());
+        newProduct.setSizeOrDiameter(req.getSizeOrDiameter());
+
+        newProduct.setSph(req.getSph());
+        newProduct.setCyl(req.getCyl());
+        newProduct.setAddPower(req.getAddPower());
+        newProduct.setPrism(req.getPrism());
+
+        newProduct.setCreatedOn(java.time.LocalDateTime.now());
+        newProduct.setPurchasePrice(null);
+        newProduct.setQuantity(0);
+        newProduct.setRetailPrice(req.getSalePriceAtSale());
+
+        return productRepository.save(newProduct);
     }
 
     public List<Product> findProductsByCharacteristics(CreateOrderItemRequest req) {
@@ -237,6 +205,50 @@ public class ProductService {
     public Product createProduct(Product product) {
         product.setId(null);
 
+        // Проверка дали изобщо са въведени данни за продукта
+        if (product.getCategory() == null
+                && isBlank(product.getBrand())
+                && isBlank(product.getModel())
+                && isBlank(product.getBarcode())
+                && isBlank(product.getSizeOrDiameter())
+                && product.getRetailPrice() == null) {
+
+            throw new IllegalArgumentException(
+                    "Не са въведени данни за продукта. Моля, попълнете формата."
+            );
+        }
+
+        // Задължителни данни за идентифициране на продукта
+        if (product.getCategory() == null) {
+            throw new IllegalArgumentException(
+                    "Моля, изберете категория на продукта."
+            );
+        }
+
+        if (isBlank(product.getBrand())) {
+            throw new IllegalArgumentException(
+                    "Моля, въведете бранд на продукта."
+            );
+        }
+
+        if (isBlank(product.getModel())) {
+            throw new IllegalArgumentException(
+                    "Моля, въведете модел на продукта."
+            );
+        }
+
+        if (product.getRetailPrice() == null) {
+            throw new IllegalArgumentException(
+                    "Моля, въведете продажна цена на продукта."
+            );
+        }
+
+        if (product.getRetailPrice().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(
+                    "Продажната цена не може да бъде отрицателна."
+            );
+        }
+
         validateProductIdentity(product, null);
 
         product.setQuantity(0);
@@ -248,12 +260,14 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
     @Transactional
     public Product updateProduct(Long productId, Product formProduct) {
         Product existingProduct = getProductById(productId);
 
-        // Проверяваме новите стойности, без да променяме текущия продукт
-        // преди успешната валидация.
         validateProductIdentity(formProduct, productId);
 
         existingProduct.setCategory(formProduct.getCategory());
@@ -268,12 +282,10 @@ public class ProductService {
         existingProduct.setRetailPrice(formProduct.getRetailPrice());
         existingProduct.setNote(formProduct.getNote());
 
-        // Запазваме досегашната логика за доставните цени
-        // и историческите данни по поръчките.
         if (formProduct.getPurchasePrice() != null) {
             updatePurchasePrice(productId, formProduct.getPurchasePrice());
         }
-        // Количеството не се променя при редакция.
+
         return productRepository.save(existingProduct);
     }
 
@@ -341,14 +353,10 @@ public class ProductService {
         product.setPurchasePrice(purchasePrice);
         productRepository.save(product);
 
-        // Ако вече е имало доставна цена, запазваме старите
-        // исторически цени в поръчките.
         if (previousPurchasePrice != null) {
             return;
         }
 
-        // Първо въвеждане на доставна цена:
-        // намираме всички исторически редове без записана цена.
         List<OrderItem> items =
                 orderItemRepository.findByProductIdAndPurchasePriceAtSaleIsNull(
                         productId
@@ -363,20 +371,18 @@ public class ProductService {
             ordersToRecalculate.putIfAbsent(order.getId(), order);
         }
 
-        // Преизчисляваме печалбата само за засегнатите поръчки.
-        // RecalculateProfits сам обработва анулираните поръчки,
-        // като оставя печалбата им null.
         for (Order order : ordersToRecalculate.values()) {
             orderPricingService.recalculateProfits(order);
         }
     }
 
     private void validateProductIdentity(Product product, Long excludedProductId) {
-        // Празният баркод се приема за липсващ.
+
         String barcode = product.getBarcode();
 
         if (barcode != null) {
             barcode = barcode.trim();
+
             if (barcode.isEmpty()) {
                 barcode = null;
             }
@@ -384,24 +390,27 @@ public class ProductService {
 
         product.setBarcode(barcode);
 
-        // Баркодът трябва да е уникален.
         if (barcode != null) {
-            Optional<Product> productWithBarcode =
-                    productRepository.findByBarcode(barcode);
+            List<Product> productsWithBarcode =
+                    productRepository.findAllByBarcode(barcode);
 
-            if (productWithBarcode.isPresent()
-                    && !Objects.equals(
-                    productWithBarcode.get().getId(),
-                    excludedProductId)) {
+            boolean barcodeUsedByAnotherProduct =
+                    productsWithBarcode.stream()
+                            .anyMatch(existing ->
+                                    !Objects.equals(
+                                            existing.getId(),
+                                            excludedProductId
+                                    )
+                            );
 
+            if (barcodeUsedByAnotherProduct) {
                 throw new IllegalArgumentException(
                         "Баркодът " + barcode
-                                + " вече се използва за друг продукт.");
+                                + " вече се използва за друг продукт."
+                );
             }
         }
 
-        // Не допускаме втори продукт със същите характеристики,
-        // независимо дали баркодът е различен или липсва.
         List<Product> matchingProducts =
                 productRepository.findProductsByCharacteristics(
                         product.getCategory(),
@@ -415,13 +424,14 @@ public class ProductService {
                 );
 
         List<Product> duplicates = matchingProducts.stream()
-                .filter(existing -> !Objects.equals(
-                        existing.getId(), excludedProductId))
+                .filter(existing ->
+                        !Objects.equals(existing.getId(), excludedProductId))
                 .toList();
 
         if (!duplicates.isEmpty()) {
             throw new IllegalArgumentException(
-                    describeDuplicateProducts(duplicates));
+                    describeDuplicateProducts(duplicates)
+            );
         }
     }
 

@@ -11,9 +11,12 @@ import com.opticsappbg.opticsapp.web.dto.CreateOrderRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.MonthDay;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -290,4 +293,137 @@ public class OrderService {
 
         orderRepository.save(order);
     }
+
+    public Page<Order> getOrdersForPeriod(
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable) {
+
+        if (startDate == null && endDate == null) {
+            return orderRepository
+                    .findAllByOrderByCreatedOnDesc(pageable);
+        }
+
+        if (startDate == null) {
+            return orderRepository
+                    .findByCreatedOnLessThanOrderByCreatedOnDesc(
+                            endDate.plusDays(1).atStartOfDay(),
+                            pageable
+                    );
+        }
+
+        if (endDate == null) {
+            return orderRepository
+                    .findByCreatedOnGreaterThanEqualOrderByCreatedOnDesc(
+                            startDate.atStartOfDay(),
+                            pageable
+                    );
+        }
+
+        LocalDateTime startDateTime = startDate.atStartOfDay();
+
+        LocalDateTime endDateTime = endDate
+                .plusDays(1)
+                .atStartOfDay()
+                .minusNanos(1);
+
+        return orderRepository
+                .findByCreatedOnBetweenOrderByCreatedOnDesc(
+                        startDateTime,
+                        endDateTime,
+                        pageable
+                );
+    }
+
+    public Page<Order> searchOrders(
+            String search,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable) {
+
+        if (startDate != null && endDate != null
+                && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(
+                    "Началната дата не може да бъде след крайната дата."
+            );
+        }
+
+        String searchText = (search == null || search.isBlank())
+                ? null
+                : search.trim();
+
+        LocalDate searchDate = null;
+        Integer searchDay = null;
+        Integer searchMonth = null;
+
+        if (searchText != null) {
+
+            // Кратка дата: например 13.10
+            if (searchText.matches("\\d{1,2}\\.\\d{1,2}")) {
+                try {
+                    String[] parts = searchText.split("\\.");
+
+                    int day = Integer.parseInt(parts[0]);
+                    int month = Integer.parseInt(parts[1]);
+
+                    // Проверяваме дали денят и месецът са валидни.
+                    MonthDay.of(month, day);
+
+                    searchDay = day;
+                    searchMonth = month;
+                    searchText = null;
+
+                } catch (java.time.DateTimeException
+                         | NumberFormatException ignored) {
+                    // Невалидната дата остава обикновен текст за търсене.
+                }
+            } else {
+                // Пълна дата: 13.10.2026 или 2026-10-13
+                try {
+                    searchDate = LocalDate.parse(
+                            searchText,
+                            DateTimeFormatter.ofPattern("dd.MM.yyyy")
+                    );
+                } catch (java.time.format.DateTimeParseException ignored) {
+                    try {
+                        searchDate = LocalDate.parse(searchText);
+                    } catch (java.time.format.DateTimeParseException ignoredAgain) {
+                        // Не е дата — търсим по номер, клиент или телефон.
+                    }
+                }
+
+                if (searchDate != null) {
+                    searchText = null;
+                }
+            }
+        }
+
+        LocalDateTime searchDateStart = searchDate == null
+                ? null
+                : searchDate.atStartOfDay();
+
+        LocalDateTime searchDateEnd = searchDate == null
+                ? null
+                : searchDate.plusDays(1).atStartOfDay();
+
+        LocalDateTime startDateTime = startDate == null
+                ? null
+                : startDate.atStartOfDay();
+
+        LocalDateTime endDateTime = endDate == null
+                ? null
+                : endDate.plusDays(1).atStartOfDay();
+
+        return orderRepository.searchOrders(
+                searchText,
+                searchDateStart,
+                searchDateEnd,
+                searchDay,
+                searchMonth,
+                startDateTime,
+                endDateTime,
+                pageable
+        );
+    }
+
 }

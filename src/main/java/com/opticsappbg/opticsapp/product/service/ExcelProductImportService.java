@@ -114,7 +114,7 @@ public class ExcelProductImportService {
 
                     BigDecimal cyl = getDecimal(
                             row, headers, formatter, evaluator,
-                            "cyl", "цилиндър", "цилиндърдиоптър"
+                            "cyl", "цилиндър"
                     );
 
                     BigDecimal addPower = getDecimal(
@@ -272,14 +272,85 @@ public class ExcelProductImportService {
 
         // 1. Ако има баркод, търсим само по него.
         if (normalizedBarcode != null) {
-            Optional<Product> byBarcode =
-                    productRepository.findByBarcode(normalizedBarcode);
+            List<Product> products =
+                    productRepository.findAllByBarcode(normalizedBarcode);
 
-            if (byBarcode.isEmpty()) {
+            if (products.isEmpty()) {
+                List<Product> matches =
+                        productRepository.findProductsByCharacteristics(
+                                category,
+                                brand,
+                                model,
+                                normalize(size),
+                                sph,
+                                cyl,
+                                addPower,
+                                prism
+                        );
+
+                if (matches.size() > 1) {
+                    throw new IllegalArgumentException(
+                            "Намерени са няколко продукта със същите характеристики, "
+                                    + "но баркодът не съществува в базата. "
+                                    + "Необходимо е ръчно уточняване."
+                    );
+                }
+
+                if (matches.size() == 1) {
+                    Product match = matches.get(0);
+
+                    if (normalize(match.getBarcode()) != null) {
+                        throw new IllegalArgumentException(
+                                "Намерен е продукт със същите характеристики, "
+                                        + "но с различен баркод. "
+                                        + "Провери дали Excel редът е правилен."
+                        );
+                    }
+
+                    return match;
+                }
+
                 return null;
             }
 
-            Product product = byBarcode.get();
+            if (products.size() > 1) {
+                StringBuilder message = new StringBuilder();
+
+                message.append("Баркод ")
+                        .append(normalizedBarcode)
+                        .append(" се среща при ")
+                        .append(products.size())
+                        .append(" продукта в базата данни. ")
+                        .append("Не може да се определи кой продукт да бъде обновен.");
+
+                message.append(" Намерени продукти:");
+
+                for (Product p : products) {
+                    message.append(" [ID: ")
+                            .append(p.getId())
+                            .append(", категория: ")
+                            .append(p.getCategory().getDisplayName())
+                            .append(", бранд: ")
+                            .append(p.getBrand())
+                            .append(", модел: ")
+                            .append(p.getModel())
+                            .append(", размер: ")
+                            .append(p.getSizeOrDiameter())
+                            .append(", SPH: ")
+                            .append(p.getSph())
+                            .append(", CYL: ")
+                            .append(p.getCyl())
+                            .append(", ADD: ")
+                            .append(p.getAddPower())
+                            .append(", призма: ")
+                            .append(p.getPrism())
+                            .append("]");
+                }
+
+                throw new IllegalArgumentException(message.toString());
+            }
+
+            Product product = products.get(0);
 
             boolean sameCharacteristics =
                     product.getCategory() == category
@@ -345,6 +416,7 @@ public class ExcelProductImportService {
         // 5. Няма съвпадение без баркод — създаваме нов продукт.
         return null;
     }
+
     private void updateIfPresent(
             Product product,
             ProductCategory category,

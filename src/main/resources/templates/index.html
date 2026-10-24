@@ -11,19 +11,14 @@
 
 <div class="app-wrapper">
 
-    <!-- HEADER -->
+
     <div th:replace="~{header :: header-fragment}"></div>
-
-    <!-- MAIN LAYOUT -->
     <div class="main-container">
-
-        <!-- SIDEBAR -->
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
-        <!-- CONTENT -->
         <section class="content">
 
-            <div class="content-header">
+            <div class="content-header content-index">
                 <h1 class="page-title-blue">Чакащи поръчки</h1>
                 <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
             </div>
@@ -77,7 +72,6 @@
                                   th:text="${order.status.displayName}">
     </span>
                         </td>
-
 
                         <td>
                             <a th:href="@{/orders/{id}/edit(id=${order.id})}"

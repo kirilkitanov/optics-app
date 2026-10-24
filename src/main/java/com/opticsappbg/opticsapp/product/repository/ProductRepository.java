@@ -62,7 +62,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("prism") BigDecimal prism
     );
 
-    // Тази заявка кара базата данни да върне само списък от уникални низове за милисекунди
     @Query("SELECT DISTINCT p.brand FROM Product p WHERE p.brand IS NOT NULL AND TRIM(p.brand) != ''")
     List<String> findDistinctBrands();
+
+    List<Product> findAllByBarcode(String barcode);
 }
