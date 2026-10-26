@@ -1,0 +1,110 @@
+
+<!DOCTYPE html>
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Клиенти</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="app-wrapper">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+            <div class="content-header">
+                <h1 class="page-title-blue">Клиенти</h1>
+
+                <div class="form-group">
+                    <label for="customerFilter">Филтър:</label>
+                    <select id="customerFilter">
+                        <option value="all">Всички клиенти</option>
+                        <option value="debtors">Само длъжници</option>
+                        <option value="no-debt">Без задължения</option>
+                    </select>
+                </div>
+
+                <a th:href="@{/customers/new}" class="btn-new-order">
+                    Нов клиент
+                </a>
+            </div>
+
+            <p th:if="${successMessage}"
+               th:text="${successMessage}"
+               class="success-message">
+            </p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Име</th>
+                        <th>Телефон</th>
+                        <th>Град</th>
+                        <th>Имейл</th>
+                        <th>Дължима сума</th>
+                        <th>Платено</th>
+                        <th>Остатък</th>
+                        <th>Действие</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="summary : ${summaries}"
+                        th:attr="data-outstanding=${summary.outstanding}">
+
+                        <td th:text="${summary.customer.fullName}"></td>
+                        <td th:text="${summary.customer.phone}"></td>
+                        <td th:text="${summary.customer.city}"></td>
+                        <td th:text="${summary.customer.email}"></td>
+
+                        <td th:text="${summary.totalOrders + ' eur'}"></td>
+                        <td th:text="${summary.paid + ' eur'}"></td>
+                        <td th:text="${summary.outstanding + ' eur'}"></td>
+
+                        <td>
+                            <a th:href="@{/customers/{id}(id=${summary.customer.id})}"
+                               class="btn-table-action">
+                                Отвори
+                            </a>
+
+                            <a th:href="@{/customers/{id}/edit(id=${summary.customer.id})}"
+                               class="btn-table-action">
+                                Редакция
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(summaries)}">
+                        <td colspan="8">Няма добавени клиенти.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    document.getElementById('customerFilter').addEventListener('change', function () {
+        const filter = this.value;
+
+        document.querySelectorAll('tr[data-outstanding]').forEach(row => {
+            const outstanding = Number(row.dataset.outstanding);
+
+            if (filter === 'debtors') {
+                row.hidden = outstanding <= 0;
+            } else if (filter === 'no-debt') {
+                row.hidden = outstanding > 0;
+            } else {
+                row.hidden = false;
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

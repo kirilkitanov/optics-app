@@ -7,7 +7,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Builder
 @NoArgsConstructor
@@ -23,7 +24,7 @@ public class CustomerPayment {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order; // Към коя поръчка е това плащане
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount; // Сума на вноската
 
     @Column(nullable = false)

@@ -1,10 +1,75 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${isEdit} ? 'Редакция на клиент' : 'Нов клиент'">
+        Клиент
+    </title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+<div class="app-wrapper">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+            <div class="content-header">
+                <h1 class="page-title-blue"
+                    th:text="${isEdit} ? 'Редакция на клиент' : 'Нов клиент'">
+                    Клиент
+                </h1>
+            </div>
+
+            <form th:object="${customerForm}"
+                  th:action="${isEdit} ? @{/customers/{id}(id=${customerId})} : @{/customers}"
+                  method="post">
+
+                <div class="form-group">
+                    <label for="fullName">Име и фамилия *</label>
+                    <input type="text" id="fullName"
+                           th:field="*{fullName}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Телефон *</label>
+                    <input type="text" id="phone"
+                           th:field="*{phone}" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="city">Град</label>
+                    <input type="text" id="city"
+                           th:field="*{city}">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Имейл</label>
+                    <input type="email" id="email"
+                           th:field="*{email}">
+                </div>
+
+                <div class="form-group">
+                    <label for="note">Бележка</label>
+                    <textarea id="note" th:field="*{note}"
+                              rows="4" maxlength="500"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-new-order">
+                        Запази
+                    </button>
+
+                    <a th:href="@{/customers}" class="btn-table-action">
+                        Отказ
+                    </a>
+                </div>
+            </form>
+        </section>
+    </div>
+</div>
 </body>
 </html>
