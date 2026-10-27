@@ -15,17 +15,31 @@
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
         <section class="content">
+
             <div class="content-header">
                 <h1 class="page-title-blue">Клиенти</h1>
 
-                <div class="form-group">
-                    <label for="customerFilter">Филтър:</label>
-                    <select id="customerFilter">
+                <form class="order-search-form" onsubmit="return false;">
+                    <input type="text"
+                           id="customerSearch"
+                           class="order-search-input"
+                           placeholder="име на клиент или телефон"
+                           autocomplete="off">
+
+                    <button type="button"
+                            class="btn-new-order"
+                            onclick="filterCustomers()">
+                        Търси
+                    </button>
+                </form>
+
+                <form class="order-search-form" onsubmit="return false;">
+                    <select id="customerFilter" class="order-search-input">
                         <option value="all">Всички клиенти</option>
                         <option value="debtors">Само длъжници</option>
                         <option value="no-debt">Без задължения</option>
                     </select>
-                </div>
+                </form>
 
                 <a th:href="@{/customers/new}" class="btn-new-order">
                     Нов клиент
@@ -45,32 +59,39 @@
                         <th>Телефон</th>
                         <th>Град</th>
                         <th>Имейл</th>
-                        <th>Дължима сума</th>
-                        <th>Платено</th>
-                        <th>Остатък</th>
-                        <th>Действие</th>
+                        <th>Сума</th>
+                        <th>Платени</th>
+                        <th>Дължими</th>
+                        <th>Преглед</th>
+                        <th>Редакция</th>
                     </tr>
                     </thead>
 
                     <tbody>
-                    <tr th:each="summary : ${summaries}"
-                        th:attr="data-outstanding=${summary.outstanding}">
+                    <tr class="customer-row"
+                        th:each="summary : ${summaries}"
+                        th:attr="data-outstanding=${summary.outstanding},
+                                 data-name=${summary.customer.fullName},
+                                 data-phone=${summary.customer.phone}">
 
                         <td th:text="${summary.customer.fullName}"></td>
                         <td th:text="${summary.customer.phone}"></td>
                         <td th:text="${summary.customer.city}"></td>
                         <td th:text="${summary.customer.email}"></td>
 
-                        <td th:text="${summary.totalOrders + ' eur'}"></td>
-                        <td th:text="${summary.paid + ' eur'}"></td>
-                        <td th:text="${summary.outstanding + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.totalOrders, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
+                            th:classappend="${summary.outstanding > 0} ? 'status-cancelled' : ''"></td>
 
                         <td>
                             <a th:href="@{/customers/{id}(id=${summary.customer.id})}"
                                class="btn-table-action">
                                 Отвори
                             </a>
+                        </td>
 
+                        <td>
                             <a th:href="@{/customers/{id}/edit(id=${summary.customer.id})}"
                                class="btn-table-action">
                                 Редакция
@@ -79,7 +100,12 @@
                     </tr>
 
                     <tr th:if="${#lists.isEmpty(summaries)}">
-                        <td colspan="8">Няма добавени клиенти.</td>
+                        <td colspan="9">Няма добавени клиенти.</td>
+                    </tr>
+                    <tr id="noCustomerResults" hidden>
+                        <td colspan="8" class="empty-table-message">
+                            Няма клиенти, отговарящи на търсенето.
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -89,21 +115,52 @@
 </div>
 
 <script>
-    document.getElementById('customerFilter').addEventListener('change', function () {
-        const filter = this.value;
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('customerSearch');
+        const customerFilter = document.getElementById('customerFilter');
 
-        document.querySelectorAll('tr[data-outstanding]').forEach(row => {
-            const outstanding = Number(row.dataset.outstanding);
+        searchInput.addEventListener('input', filterCustomers);
+        customerFilter.addEventListener('change', filterCustomers);
+
+        filterCustomers();
+    });
+
+    function filterCustomers() {
+        const searchInput = document.getElementById('customerSearch');
+        const customerFilter = document.getElementById('customerFilter');
+
+        const search = searchInput.value.trim().toLocaleLowerCase('bg');
+        const filter = customerFilter.value;
+
+        const rows = Array.from(document.querySelectorAll('.customer-row'));
+        let visibleCount = 0;
+
+        rows.forEach(function (row) {
+            const name = (row.dataset.name || '').toLocaleLowerCase('bg');
+            const phone = (row.dataset.phone || '').toLocaleLowerCase('bg');
+            const outstanding = Number(row.dataset.outstanding || 0);
+
+            const matchesSearch =
+                name.includes(search) || phone.includes(search);
+
+            let matchesFilter = true;
 
             if (filter === 'debtors') {
-                row.hidden = outstanding <= 0;
+                matchesFilter = outstanding > 0;
             } else if (filter === 'no-debt') {
-                row.hidden = outstanding > 0;
-            } else {
-                row.hidden = false;
+                matchesFilter = outstanding <= 0;
+            }
+
+            row.hidden = !(matchesSearch && matchesFilter);
+
+            if (!row.hidden) {
+                visibleCount++;
             }
         });
-    });
+
+        const noResults = document.getElementById('noCustomerResults');
+        noResults.hidden = rows.length === 0 || visibleCount > 0;
+    }
 </script>
 
 </body>

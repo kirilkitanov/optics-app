@@ -1,75 +1,102 @@
-
 <!DOCTYPE html>
 <html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${isEdit} ? 'Редакция на клиент' : 'Нов клиент'">
-        Клиент
-    </title>
+    <title th:text="${isEdit} ? 'Редакция на клиент' : 'Нов клиент'">Клиент</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
 <div class="app-wrapper">
+
     <div th:replace="~{header :: header-fragment}"></div>
 
     <div class="main-container">
+
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
-        <section class="content">
+        <section class="content new-order-page product-form-page">
+
             <div class="content-header">
                 <h1 class="page-title-blue"
                     th:text="${isEdit} ? 'Редакция на клиент' : 'Нов клиент'">
                     Клиент
                 </h1>
+
+                <a th:href="@{/customers}" class="btn-new-order">Назад</a>
             </div>
 
-            <form th:object="${customerForm}"
-                  th:action="${isEdit} ? @{/customers/{id}(id=${customerId})} : @{/customers}"
-                  method="post">
+            <div class="table-container">
 
-                <div class="form-group">
-                    <label for="fullName">Име и фамилия *</label>
-                    <input type="text" id="fullName"
-                           th:field="*{fullName}" required>
-                </div>
+                <form th:object="${customerForm}"
+                      th:action="${isEdit} ? @{/customers/{id}(id=${customerId})} : @{/customers}"
+                      method="post">
 
-                <div class="form-group">
-                    <label for="phone">Телефон *</label>
-                    <input type="text" id="phone"
-                           th:field="*{phone}" required>
-                </div>
+                    <div class="item-row">
 
-                <div class="form-group">
-                    <label for="city">Град</label>
-                    <input type="text" id="city"
-                           th:field="*{city}">
-                </div>
+                        <div class="item-fields">
 
-                <div class="form-group">
-                    <label for="email">Имейл</label>
-                    <input type="email" id="email"
-                           th:field="*{email}">
-                </div>
+                            <div class="item-field">
+                                <label for="fullName">Име и фамилия</label>
+                                <input id="fullName"
+                                       type="text"
+                                       th:field="*{fullName}"
+                                       class="status-select"
+                                       required>
+                            </div>
 
-                <div class="form-group">
-                    <label for="note">Бележка</label>
-                    <textarea id="note" th:field="*{note}"
-                              rows="4" maxlength="500"></textarea>
-                </div>
+                            <div class="item-field">
+                                <label for="phone">Телефон</label>
+                                <input id="phone"
+                                       type="text"
+                                       th:field="*{phone}"
+                                       class="status-select"
+                                       required>
+                            </div>
 
-                <div class="form-actions">
-                    <button type="submit" class="btn-new-order">
-                        Запази
-                    </button>
+                            <div class="item-field">
+                                <label for="city">Град</label>
+                                <input id="city"
+                                       type="text"
+                                       th:field="*{city}"
+                                       class="status-select">
+                            </div>
 
-                    <a th:href="@{/customers}" class="btn-table-action">
-                        Отказ
-                    </a>
-                </div>
-            </form>
+                            <div class="item-field">
+                                <label for="email">Имейл</label>
+                                <input id="email"
+                                       type="email"
+                                       th:field="*{email}"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field customer-note-field">
+                                <label for="note">Бележка</label>
+                                <textarea id="note"
+                                          th:field="*{note}"
+                                          class="status-select"
+                                          maxlength="500"
+                                          rows="2"
+                                          placeholder="Допълнителна информация..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order"
+                                th:text="${isEdit} ? 'Запази промените' : 'Създай клиент'">
+                            Запази
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
         </section>
     </div>
 </div>
+
 </body>
 </html>

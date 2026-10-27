@@ -13,12 +13,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.MonthDay;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+
 
 @Service
 @RequiredArgsConstructor
@@ -413,6 +416,56 @@ public class OrderService {
         LocalDateTime endDateTime = endDate == null
                 ? null
                 : endDate.plusDays(1).atStartOfDay();
+
+        if (searchText != null) {
+
+            final String searchTerm = searchText;
+            final String searchLower = searchTerm.toLowerCase(Locale.ROOT);
+            List<Order> matchingOrders = orderRepository
+                    .findAllByOrderByCreatedOnDesc()
+                    .stream()
+                    .filter(order -> {
+                        LocalDateTime createdOn = order.getCreatedOn();
+
+                        if (startDateTime != null
+                                && createdOn.isBefore(startDateTime)) {
+                            return false;
+                        }
+
+                        if (endDateTime != null
+                                && !createdOn.isBefore(endDateTime)) {
+                            return false;
+                        }
+
+                        String orderNumber = order.getOrderNumber() == null
+                                ? ""
+                                : order.getOrderNumber().toLowerCase(Locale.ROOT);
+
+                        String fullName = order.getCustomer().getFullName() == null
+                                ? ""
+                                : order.getCustomer().getFullName()
+                                .toLowerCase(Locale.ROOT);
+
+                        String phone = order.getCustomer().getPhone() == null
+                                ? ""
+                                : order.getCustomer().getPhone();
+
+                        return orderNumber.contains(searchLower)
+                                || fullName.contains(searchLower)
+                                || phone.contains(searchTerm);
+                    })
+                    .toList();
+
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(),
+                    matchingOrders.size());
+
+            List<Order> pageContent = start >= matchingOrders.size()
+                    ? List.of()
+                    : matchingOrders.subList(start, end);
+
+            return new PageImpl<>(pageContent, pageable, matchingOrders.size());
+        }
 
         return orderRepository.searchOrders(
                 searchText,

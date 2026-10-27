@@ -118,8 +118,7 @@ public class CustomerService {
 
         List<CustomerOrderSummaryDto> summaries = new ArrayList<>();
 
-        customer.getOrders().stream()
-                .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
+                customer.getOrders().stream()
                 .sorted(Comparator.comparing(
                         Order::getCreatedOn,
                         Comparator.nullsLast(Comparator.reverseOrder())
@@ -139,10 +138,14 @@ public class CustomerService {
                             ? order.getTotal()
                             : BigDecimal.ZERO;
 
+                    BigDecimal outstanding = order.getStatus() == OrderStatus.CANCELLED
+                            ? BigDecimal.ZERO
+                            : total.subtract(paid);
+
                     summaries.add(new CustomerOrderSummaryDto(
                             order,
                             paid,
-                            total.subtract(paid)
+                            outstanding
                     ));
                 });
 

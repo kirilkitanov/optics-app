@@ -153,4 +153,43 @@ public class CustomerController {
         return "redirect:/customers/" + customerId;
     }
 
+
+    @PostMapping("/customers/{customerId}/orders/{orderId}/payments/{paymentId}/edit")
+    public String editPayment(
+            @PathVariable Long customerId,
+            @PathVariable Long orderId,
+            @PathVariable Long paymentId,
+            @ModelAttribute CustomerPaymentRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            customerPaymentService.editPayment(orderId, paymentId, request);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Плащането е редактирано успешно.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/customers/" + customerId;
+    }
+
+    @PostMapping("/customers/{customerId}/orders/{orderId}/payments/{paymentId}/delete")
+    public String deletePayment(
+            @PathVariable Long customerId,
+            @PathVariable Long orderId,
+            @PathVariable Long paymentId,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            customerPaymentService.deletePayment(orderId, paymentId);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Плащането е изтрито успешно.");
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/customers/" + customerId;
+    }
+
+
 }
