@@ -83,12 +83,14 @@ public class CustomerService {
         List<CustomerSummaryDto> summaries = new ArrayList<>();
 
         for (Customer customer : customers) {
+            // Сумата на активните поръчки.
             BigDecimal totalOrders = customer.getOrders().stream()
                     .filter(order -> order.getStatus() != OrderStatus.CANCELLED)
                     .map(Order::getTotal)
                     .filter(total -> total != null)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+            // Всички плащания по активните поръчки.
             BigDecimal paid = customerPaymentRepository
                     .findByOrder_Customer_IdAndOrder_StatusNot(
                             customer.getId(),
@@ -99,7 +101,23 @@ public class CustomerService {
                     .filter(amount -> amount != null)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-            BigDecimal outstanding = totalOrders.subtract(paid);
+            // Нетно получените пари по анулираните поръчки.
+            // От тях се изваждат вече върнатите суми.
+            BigDecimal cancelledPayments = customer.getOrders().stream()
+                    .filter(order -> order.getStatus() == OrderStatus.CANCELLED)
+                    .map(order -> customerPaymentRepository
+                            .findByOrder_IdOrderByPaymentDateDesc(order.getId())
+                            .stream()
+                            .map(CustomerPayment::getAmount)
+                            .filter(amount -> amount != null)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            // Положително: клиентът дължи.
+            // Отрицателно: ние дължим на клиента.
+            BigDecimal outstanding = totalOrders
+                    .subtract(paid)
+                    .subtract(cancelledPayments);
 
             summaries.add(new CustomerSummaryDto(
                     customer,
@@ -118,28 +136,28 @@ public class CustomerService {
 
         List<CustomerOrderSummaryDto> summaries = new ArrayList<>();
 
-                customer.getOrders().stream()
+        customer.getOrders().stream()
                 .sorted(Comparator.comparing(
                         Order::getCreatedOn,
                         Comparator.nullsLast(Comparator.reverseOrder())
                 ))
                 .forEach(order -> {
                     BigDecimal paid = customerPaymentRepository
-                            .findByOrder_IdAndOrder_StatusNot(
-                                    order.getId(),
-                                    OrderStatus.CANCELLED
-                            )
+                            .findByOrder_IdOrderByPaymentDateDesc(order.getId())
                             .stream()
                             .map(CustomerPayment::getAmount)
                             .filter(amount -> amount != null)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
+                    // Запазваме историческата сума на поръчката.
                     BigDecimal total = order.getTotal() != null
                             ? order.getTotal()
                             : BigDecimal.ZERO;
 
+                    // При анулирана поръчка остатъкът показва
+                    // колко пари трябва да бъдат върнати.
                     BigDecimal outstanding = order.getStatus() == OrderStatus.CANCELLED
-                            ? BigDecimal.ZERO
+                            ? paid.negate()
                             : total.subtract(paid);
 
                     summaries.add(new CustomerOrderSummaryDto(
@@ -151,6 +169,7 @@ public class CustomerService {
 
         return summaries;
     }
+
 
 }
 

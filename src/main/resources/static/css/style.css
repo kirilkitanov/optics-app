@@ -263,6 +263,7 @@ td {
     text-align: center;
     box-sizing: border-box;
     transition: background-color 0.2s;
+    border: none;
 }
 
 .btn-table-action:hover {
@@ -1326,3 +1327,78 @@ body:has(.customer-row) #customerFilter {
     flex: 0 0 140px;
 }
 
+.customer-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 18px;
+    margin: 6px 0 12px;
+    color: #1f4e79;
+    font-size: 12px;
+}
+
+.customer-details h2 {
+    width: 100%;
+    margin: 0 0 2px;
+    color: #1f4e79;
+    font-size: 15px;
+}
+
+/*.content .table-container:has(.payment-history-actions) table {*/
+/*    min-width: 0;*/
+/*    width: 100%;*/
+/*    table-layout: auto;*/
+/*}*/
+
+.content .table-container:has(.payment-history-actions) th,
+.content .table-container:has(.payment-history-actions) td {
+    padding: 6px 8px;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.payment-history-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+}
+
+.payment-action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.payment-action-buttons form {
+    margin: 0;
+}
+
+.payment-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: #1f4e79;
+    color: white;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.payment-icon-button:hover {
+    background: #163856;
+}
+
+.payment-delete-button {
+    background: #c62828;
+    font-size: 18px;
+}
+
+.payment-delete-button:hover {
+    background: #a61f1f;
+}

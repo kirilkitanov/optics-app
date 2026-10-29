@@ -15,20 +15,16 @@
 
         <section class="content">
             <div class="content-header">
-                <h1 class="page-title-blue"
-                    th:text="${customer.fullName}">
-                    Клиент
-                </h1>
+                <h1 class="page-title-blue">Поръчки и плащания</h1>
 
-                <a th:href="@{/customers/{id}/edit(id=${customer.id})}"
-                   class="btn-table-action">
-                    Редакция
+                <a th:href="@{/customers}" class="btn-new-order">
+                    Назад
                 </a>
             </div>
 
             <div th:if="${successMessage}"
                  th:text="${successMessage}"
-                 style="color: green; margin-bottom: 12px;">
+                 class="success-message">
             </div>
 
             <div th:if="${errorMessage}"
@@ -36,22 +32,24 @@
                  style="color: red; margin-bottom: 12px;">
             </div>
 
-            <p>
-                <strong>Телефон:</strong>
-                <span th:text="${customer.phone}"></span>
-            </p>
+            <div class="customer-details">
+                <h2 th:text="${customer.fullName}">Име на клиента</h2>
 
-            <p>
-                <strong>Град:</strong>
-                <span th:text="${customer.city}"></span>
-            </p>
+                <p>
+                    <strong>Телефон:</strong>
+                    <span th:text="${customer.phone}"></span>
+                </p>
 
-            <p>
-                <strong>Имейл:</strong>
-                <span th:text="${customer.email}"></span>
-            </p>
+                <p>
+                    <strong>Град:</strong>
+                    <span th:text="${customer.city}"></span>
+                </p>
 
-            <h2>Поръчки и плащания</h2>
+                <p>
+                    <strong>Имейл:</strong>
+                    <span th:text="${customer.email}"></span>
+                </p>
+            </div>
 
             <div class="table-container">
                 <table>
@@ -63,7 +61,7 @@
                         <th>Обща сума</th>
                         <th>Платено</th>
                         <th>Остатък</th>
-                        <th>Ново плащане</th>
+                        <th>Плащане</th>
                         <th>История на плащанията</th>
                     </tr>
                     </thead>
@@ -78,16 +76,17 @@
 
                         <td th:text="${summary.order.status.displayName}"></td>
 
-                        <td th:text="${summary.order.total + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.order.total, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
 
-                        <td th:text="${summary.paid + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
 
-                        <td th:text="${summary.outstanding + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
+                            th:classappend="${summary.outstanding > 0} ? 'status-cancelled' : ''"></td>
 
                         <td>
-
                             <button type="button"
                                     class="btn-table-action"
+                                    th:if="${summary.outstanding != null and summary.outstanding.compareTo(T(java.math.BigDecimal).ZERO) != 0}"
                                     th:attr="data-order-id=${summary.order.id},
                  data-order-number=${summary.order.orderNumber},
                  data-order-total=${summary.order.total},
@@ -95,13 +94,10 @@
                  data-outstanding=${summary.outstanding},
                  data-cancelled=${summary.order.status.name() == 'CANCELLED'}"
                                     onclick="openPaymentModal(this)">
-                                <span th:if="${summary.order.status.name() != 'CANCELLED'}">Добави</span>
-                                <span th:if="${summary.order.status.name() == 'CANCELLED'}">Върни пари</span>
+                                <span th:if="${summary.order.status.name() != 'CANCELLED'}">Ново</span>
+                                <span th:if="${summary.order.status.name() == 'CANCELLED'}">Върни сума</span>
                             </button>
 
-                            <span th:if="${summary.order.status.name() == 'CANCELLED'}">
-                                        Не е активна
-                                  </span>
                         </td>
 
                         <td>
@@ -120,16 +116,18 @@
                                 <span th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy HH:mm')}"></span>
                                 <br>
 
-                                <small>
-                                    Въвел:
-                                    <span th:text="${payment.createdBy.username}"></span>
-                                </small>
+                                <div class="payment-history-actions">
+    <span class="payment-created-by">
+        Въвел:
+        <span th:text="${payment.createdBy.username}"></span>
+    </span>
 
-                                <div style="display: flex; gap: 6px; margin-top: 4px;">
-
-                                    <button type="button"
-                                            class="btn-table-action"
-                                            th:attr="data-payment-id=${payment.id},
+                                    <div class="payment-action-buttons">
+                                        <button type="button"
+                                                class="payment-icon-button"
+                                                title="Редакция на плащането"
+                                                aria-label="Редакция на плащането"
+                                                th:attr="data-payment-id=${payment.id},
                          data-order-id=${summary.order.id},
                          data-order-number=${summary.order.orderNumber},
                          data-order-total=${summary.order.total},
@@ -137,26 +135,29 @@
                          data-outstanding=${summary.outstanding},
                          data-amount=${payment.amount},
                          data-method=${payment.paymentMethod.name()}"
-                                            onclick="openEditPaymentModal(this)">
-                                        Редакция
-                                    </button>
+                                                onclick="openEditPaymentModal(this)">
+                                            ✎
+                                        </button>
 
-                                    <form method="post"
-                                          th:action="@{/customers/{customerId}/orders/{orderId}/payments/{paymentId}/delete(
+                                        <form method="post"
+                                              th:action="@{/customers/{customerId}/orders/{orderId}/payments/{paymentId}/delete(
                   customerId=${customer.id},
                   orderId=${summary.order.id},
                   paymentId=${payment.id})}"
-                                          onsubmit="return confirm('Сигурни ли сте, че искате да изтриете плащането?');">
+                                              onsubmit="return confirm('Сигурни ли сте, че искате да изтриете плащането?');">
 
-                                        <input type="hidden"
-                                               th:name="${_csrf.parameterName}"
-                                               th:value="${_csrf.token}">
+                                            <input type="hidden"
+                                                   th:name="${_csrf.parameterName}"
+                                                   th:value="${_csrf.token}">
 
-                                        <button type="submit" class="btn-table-action">
-                                            Изтрий
-                                        </button>
-                                    </form>
-
+                                            <button type="submit"
+                                                    class="payment-icon-button payment-delete-button"
+                                                    title="Изтрий плащането"
+                                                    aria-label="Изтрий плащането">
+                                                ×
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
 
@@ -172,11 +173,6 @@
                 </table>
             </div>
 
-            <div class="form-actions">
-                <a th:href="@{/customers}" class="btn-table-action">
-                    Назад
-                </a>
-            </div>
         </section>
     </div>
 </div>
