@@ -1,10 +1,236 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Списък доставки</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
-$END$
+
+<div class="app-wrapper">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+
+            <div class="content-header">
+
+                <div class="orders-title-search">
+                    <h1 class="page-title-blue">Всички доставки</h1>
+
+                    <form th:action="@{/deliveries}" method="get" class="order-search-form">
+                        <input type="text"
+                               id="deliverySearch"
+                               name="search"
+                               class="order-search-input"
+                               placeholder="доставчик, номер на фактура"
+                               th:value="${search}"
+                               autocomplete="off">
+
+                        <input type="hidden" name="startDate" th:value="${startDate}">
+                        <input type="hidden" name="endDate" th:value="${endDate}">
+
+                        <button type="submit" class="btn-new-order">Търси</button>
+                    </form>
+                </div>
+
+                <form th:action="@{/deliveries}" method="get" class="date-filter-form">
+                    <input type="date" name="startDate"
+                           th:value="${startDate}" title="Начална дата">
+
+                    <input type="date" name="endDate"
+                           th:value="${endDate}" title="Крайна дата">
+
+                    <button type="submit" class="btn-new-order">Филтрирай</button>
+                </form>
+
+                <a th:href="@{/suppliers}" class="btn-new-order">Доставчици</a>
+
+                <a th:href="@{/deliveries/new}" class="btn-new-order">Нова доставка</a>
+
+            </div>
+
+            <div class="table-container orders-table">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Дата</th>
+                        <th>Фактура №</th>
+                        <th>Доставчик</th>
+                        <th>Обща сума</th>
+                        <th>Платено</th>
+                        <th>Оставащо</th>
+                        <th>Действие</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr class="order-row" th:each="delivery : ${deliveries}">
+
+                        <td th:text="${#temporals.format(delivery.invoiceDate, 'dd.MM.yyyy')}"></td>
+
+                        <td th:text="${delivery.invoiceNumber}"></td>
+
+                        <td th:text="${delivery.supplier.companyName}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(delivery.totalAmount, 1, 'COMMA', 2, 'POINT') + ' eur'}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(paidAmounts[delivery.id], 1, 'COMMA', 2, 'POINT') + ' eur'}"></td>
+
+                        <td>
+                            <span th:if="${remainingAmounts[delivery.id].compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                  th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'COMMA', 2, 'POINT') + ' eur'}">
+                            </span>
+
+                            <span th:if="${remainingAmounts[delivery.id].compareTo(T(java.math.BigDecimal).ZERO) == 0}"
+                                  th:text="'0.00 eur'">
+                            </span>
+
+                            <span th:if="${remainingAmounts[delivery.id].compareTo(T(java.math.BigDecimal).ZERO) < 0}"
+                                  th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'COMMA', 2, 'POINT') + ' eur (надплатено)'}"
+                                  style="color: #dc3545; font-weight: bold;">
+                            </span>
+                        </td>
+
+                        <td>
+                            <a th:href="@{/deliveries/{id}(id=${delivery.id})}"
+                               class="btn-table-action">
+                                Отвори
+                            </a>
+                        </td>
+
+                    </tr>
+
+                    <tr id="noSearchResults" style="display: none;">
+                        <td colspan="7" class="empty-table-message">
+                            Няма доставки, отговарящи на търсенето.
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(deliveries)}">
+                        <td colspan="7" class="empty-table-message">
+                            Няма намерени доставки.
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-container" th:if="${totalPages > 1}">
+
+                <a th:if="${currentPage > 0}"
+                   th:href="@{/deliveries(page=${currentPage - 1}, startDate=${startDate}, endDate=${endDate}, search=${search})}"
+                   class="btn-new-order">
+                    ← Предишна
+                </a>
+
+                <span class="pagination-info">
+                    Страница <span th:text="${currentPage + 1}"></span>
+                    от <span th:text="${totalPages}"></span>
+                </span>
+
+                <a th:if="${currentPage < totalPages - 1}"
+                   th:href="@{/deliveries(page=${currentPage + 1}, startDate=${startDate}, endDate=${endDate}, search=${search})}"
+                   class="btn-new-order">
+                    Следваща →
+                </a>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const deliveryRows = Array.from(document.querySelectorAll('.order-row'));
+
+        let selectedIndex = -1;
+
+        deliveryRows.forEach(function (row) {
+            row.addEventListener('click', function (event) {
+
+                if (event.target.closest('a, select, button, input')) {
+                    return;
+                }
+
+                selectRow(row);
+            });
+        });
+
+        function getVisibleRows() {
+            return deliveryRows.filter(function (row) {
+                return row.style.display !== 'none';
+            });
+        }
+
+        function selectRow(row) {
+            const visibleRows = getVisibleRows();
+
+            deliveryRows.forEach(function (item) {
+                item.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = visibleRows.indexOf(row);
+
+            if (selectedIndex >= 0) {
+                row.classList.add('order-row-selected');
+                row.scrollIntoView({block: 'nearest'});
+            }
+        }
+
+        document.addEventListener('keydown', function (event) {
+            const target = event.target;
+
+            if (
+                target.matches('input, textarea, select') ||
+                target.isContentEditable
+            ) {
+                return;
+            }
+
+            const visibleRows = getVisibleRows();
+
+            if (visibleRows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+
+                if (event.key === 'ArrowDown') {
+                    selectedIndex = selectedIndex < 0
+                        ? 0
+                        : Math.min(selectedIndex + 1, visibleRows.length - 1);
+                } else {
+                    selectedIndex = selectedIndex < 0
+                        ? visibleRows.length - 1
+                        : Math.max(selectedIndex - 1, 0);
+                }
+
+                selectRow(visibleRows[selectedIndex]);
+            }
+
+            if (event.key === 'Enter' && selectedIndex >= 0) {
+                const selectedRow = visibleRows[selectedIndex];
+                const actionLink = selectedRow.querySelector('.btn-table-action');
+
+                if (actionLink) {
+                    event.preventDefault();
+                    window.location.href = actionLink.href;
+                }
+            }
+        });
+    });
+</script>
+
 </body>
 </html>
+

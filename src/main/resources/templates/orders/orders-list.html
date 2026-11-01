@@ -15,48 +15,44 @@
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
         <section class="content" >
+           
             <div class="content-header">
-                <h1 class="page-title-blue">Всички поръчки</h1>
 
-                <form th:action="@{/orders}" method="get" class="order-search-form">
-                    <input type="text"
-                           id="orderSearch"
-                           name="search"
-                           class="order-search-input"
-                           placeholder="клиент, тел., номер, дата"
-                           th:value="${search}"
-                           autocomplete="off">
+    <div class="orders-title-search">
+        <h1 class="page-title-blue">Всички поръчки</h1>
 
-                    <input type="hidden"
-                           name="startDate"
-                           th:value="${startDate}">
+        <form th:action="@{/orders}" method="get" class="order-search-form">
+            <input type="text"
+                   id="orderSearch"
+                   name="search"
+                   class="order-search-input"
+                   placeholder="клиент, тел., номер, дата"
+                   th:value="${search}"
+                   autocomplete="off">
 
-                    <input type="hidden"
-                           name="endDate"
-                           th:value="${endDate}">
+            <input type="hidden" name="startDate" th:value="${startDate}">
+            <input type="hidden" name="endDate" th:value="${endDate}">
 
-                    <button type="submit" class="btn-new-order">Търси</button>
-                </form>
+            <button type="submit" class="btn-new-order">Търси</button>
+        </form>
+    </div>
 
-                <form th:action="@{/orders}" method="get" class="date-filter-form">
-                    <input type="date"
-                           name="startDate"
-                           th:value="${startDate}"
-                           title="Начална дата">
+    <form th:action="@{/orders}" method="get" class="date-filter-form">
+        <input type="date" name="startDate"
+               th:value="${startDate}" title="Начална дата">
 
-                    <input type="date"
-                           name="endDate"
-                           th:value="${endDate}"
-                           title="Крайна дата">
+        <input type="date" name="endDate"
+               th:value="${endDate}" title="Крайна дата">
 
-                    <button type="submit" class="btn-new-order">Филтрирай</button>
-                </form>
+        <button type="submit" class="btn-new-order">Филтрирай</button>
+    </form>
 
-                <a th:href="@{/orders/export(startDate=${startDate},endDate=${endDate})}"
-                   class="btn-new-order">Експорт в Excel</a>
+    <a th:href="@{/orders/export(startDate=${startDate},endDate=${endDate})}"
+       class="btn-new-order">Експорт в Excel</a>
 
-                <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
-            </div>
+    <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
+
+</div>
 
 
             <div class="table-container orders-table">
@@ -80,7 +76,13 @@
 
                         <td th:text="${#temporals.format(order.createdOn, 'dd.MM.yyyy')}"></td>
                         <td th:text="${order.orderNumber}"></td>
-                        <td th:text="${order.customer.fullName}"></td>
+<!--                        <td th:text="${order.customer.fullName}"></td>-->
+                        <td>
+                            <a th:href="@{/customers/{id}(id=${order.customer.id})}"
+                               th:text="${order.customer.fullName}"
+                               style="color: inherit; text-decoration: none; cursor: pointer;">
+                            </a>
+                        </td>
                         <td th:text="${order.customer.phone}"></td>
                         <td th:text="${#numbers.formatDecimal(order.total, 1, 'COMMA', 2, 'POINT') + ' eur'}"></td>
                         <td>

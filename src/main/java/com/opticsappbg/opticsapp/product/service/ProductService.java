@@ -6,6 +6,7 @@ import com.opticsappbg.opticsapp.order.repository.OrderItemRepository;
 import com.opticsappbg.opticsapp.order.service.OrderPricingService;
 import com.opticsappbg.opticsapp.product.model.Product;
 import com.opticsappbg.opticsapp.product.repository.ProductRepository;
+import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderItemRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -148,6 +149,125 @@ public class ProductService {
                 "Намерени са няколко продукта с тези характеристики. " +
                         "Моля, изберете продукт чрез баркода."
         );
+    }
+
+    @Transactional
+    public Product findOrCreateFromDelivery(CreateDeliveryItemRequest req) {
+
+        // Ако е избран съществуващ продукт, използваме него.
+        if (req.getProductId() != null) {
+            return productRepository.findById(req.getProductId())
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(
+                                    "Избраният продукт не съществува."
+                            )
+                    );
+        }
+
+        String barcode = req.getBarcode() != null
+                ? req.getBarcode().trim()
+                : null;
+
+        if (barcode != null && barcode.isEmpty()) {
+            barcode = null;
+        }
+
+        BigDecimal sph = req.getSph() != null
+                ? req.getSph() : BigDecimal.ZERO;
+
+        BigDecimal cyl = req.getCyl() != null
+                ? req.getCyl() : BigDecimal.ZERO;
+
+        BigDecimal addPower = req.getAddPower() != null
+                ? req.getAddPower() : BigDecimal.ZERO;
+
+        BigDecimal prism = req.getPrism() != null
+                ? req.getPrism() : BigDecimal.ZERO;
+
+        // Проверка по баркод.
+        if (barcode != null) {
+
+            Optional<Product> productWithBarcode =
+                    productRepository.findByBarcode(barcode);
+
+            if (productWithBarcode.isPresent()) {
+
+                Optional<Product> exactProduct =
+                        productRepository.findExactProduct(
+                                req.getCategory(),
+                                req.getBrand(),
+                                req.getModel(),
+                                barcode,
+                                req.getSizeOrDiameter(),
+                                sph,
+                                cyl,
+                                addPower,
+                                prism
+                        );
+
+                if (exactProduct.isPresent()) {
+                    return exactProduct.get();
+                }
+
+                throw new IllegalArgumentException(
+                        "Баркодът " + barcode +
+                                " вече се използва за друг продукт."
+                );
+            }
+        }
+
+        // Проверка по характеристики.
+        List<Product> matchingProducts =
+                productRepository.findProductsByCharacteristics(
+                        req.getCategory(),
+                        req.getBrand(),
+                        req.getModel(),
+                        req.getSizeOrDiameter(),
+                        sph,
+                        cyl,
+                        addPower,
+                        prism
+                );
+
+        if (matchingProducts.size() == 1) {
+            return matchingProducts.get(0);
+        }
+
+        if (matchingProducts.size() > 1) {
+            throw new IllegalArgumentException(
+                    describeDuplicateProducts(matchingProducts)
+            );
+        }
+
+        // Ако продуктът не съществува, създаваме нов.
+        if (req.getCategory() == null
+                || req.getBrand() == null || req.getBrand().isBlank()
+                || req.getModel() == null || req.getModel().isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Моля, въведете категория, бранд и модел на продукта."
+            );
+        }
+
+        Product newProduct = new Product();
+
+        newProduct.setCategory(req.getCategory());
+        newProduct.setBrand(req.getBrand().trim());
+        newProduct.setModel(req.getModel().trim());
+        newProduct.setBarcode(barcode);
+        newProduct.setSizeOrDiameter(req.getSizeOrDiameter());
+
+        newProduct.setSph(sph);
+        newProduct.setCyl(cyl);
+        newProduct.setAddPower(addPower);
+        newProduct.setPrism(prism);
+
+        newProduct.setQuantity(0);
+        newProduct.setPurchasePrice(null);
+        newProduct.setRetailPrice(BigDecimal.ZERO);
+        newProduct.setCreatedOn(java.time.LocalDateTime.now());
+
+        return productRepository.save(newProduct);
     }
 
     private Product createProductFromRequest(

@@ -21,6 +21,7 @@ import java.time.MonthDay;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 
 @Service
@@ -46,9 +47,7 @@ public class OrderService {
         order.setCreatedBy(user);
         order.setNote(request.getNote());
 
-        String generatedOrderNumber = "O-" + LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyMMdd-HHmmss"));
-        order.setOrderNumber(generatedOrderNumber);
+        order.setOrderNumber("TMP-" + UUID.randomUUID());
 
         addItemsToOrder(order, request);
 
@@ -60,7 +59,16 @@ public class OrderService {
                     -item.getQuantity());
         }
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+
+        String generatedOrderNumber = savedOrder.getCreatedOn()
+                .format(DateTimeFormatter.ofPattern("yyMMdd"))
+                + "-"
+                + String.format("%04d", savedOrder.getId());
+
+        savedOrder.setOrderNumber(generatedOrderNumber);
+
+        return savedOrder;
     }
 
     private OrderItem buildItem(CreateOrderItemRequest req, Product product) {

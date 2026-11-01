@@ -61,27 +61,53 @@
                         <th>Обща сума</th>
                         <th>Платено</th>
                         <th>Остатък</th>
-                        <th>Плащане</th>
+                        <th>Действие</th>
                         <th>История на плащанията</th>
                     </tr>
                     </thead>
 
                     <tbody>
                     <tr th:each="summary : ${orderSummaries}">
-                        <td th:text="${summary.order.orderNumber}"></td>
+                        <td>
+                            <a th:href="@{/orders/{id}/edit(id=${summary.order.id})}"
+                               th:text="${summary.order.orderNumber}"
+                               style="color: inherit; text-decoration: none; cursor: pointer;">
+                            </a>
+                        </td>
 
                         <td th:text="${#temporals.format(
                             summary.order.createdOn, 'dd.MM.yyyy'
                         )}"></td>
 
-                        <td th:text="${summary.order.status.displayName}"></td>
+                        <td>
+                            <span th:if="${summary.order.status.name() == 'WAITING_LENSES'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-waiting-lenses"></span>
+
+                            <span th:if="${summary.order.status.name() == 'READY_FOR_CRAFT'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-ready-for-craft"></span>
+
+                            <span th:if="${summary.order.status.name() == 'READY_FOR_PICKUP'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-ready-pickup"></span>
+
+                            <span th:if="${summary.order.status.name() == 'COMPLETED'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-completed"></span>
+
+                            <span th:if="${summary.order.status.name() == 'CANCELLED'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-cancelled"></span>
+                        </td>
 
                         <td th:text="${#numbers.formatDecimal(summary.order.total, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
 
                         <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
 
                         <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
-                            th:classappend="${summary.outstanding > 0} ? 'status-cancelled' : ''"></td>
+                            th:classappend="${summary.outstanding > 0} ? 'status-completed' :
+                    (${summary.outstanding < 0} ? 'status-cancelled' : '')"> </td>
 
                         <td>
                             <button type="button"
@@ -94,7 +120,7 @@
                  data-outstanding=${summary.outstanding},
                  data-cancelled=${summary.order.status.name() == 'CANCELLED'}"
                                     onclick="openPaymentModal(this)">
-                                <span th:if="${summary.order.status.name() != 'CANCELLED'}">Ново</span>
+                                <span th:if="${summary.order.status.name() != 'CANCELLED'}">Плащане</span>
                                 <span th:if="${summary.order.status.name() == 'CANCELLED'}">Върни сума</span>
                             </button>
 
@@ -179,13 +205,38 @@
 
 <div id="paymentModal" class="modal" style="display: none;" aria-hidden="true">
     <div class="modal-content">
-        <h3 id="paymentModalTitle">Добавяне на плащане</h3>
 
-        <p>Клиент: <strong id="paymentCustomerName"></strong></p>
-        <p>Поръчка №: <strong id="paymentOrderNumber"></strong></p>
-        <p>Обща сума: <strong id="paymentOrderTotal"></strong> eur</p>
-        <p>Платено: <strong id="paymentAlreadyPaid"></strong> eur</p>
-        <p>Остатък: <strong id="paymentOutstanding"></strong> eur</p>
+        <h3 id="paymentModalTitle" class="page-title-blue">
+            Добавяне на плащане
+        </h3>
+
+        <div class="customer-details payment-details">
+
+            <p>
+                <strong>Клиент:</strong>
+                <span id="paymentCustomerName"></span>
+            </p>
+
+            <p>
+                <strong>Поръчка №:</strong>
+                <span id="paymentOrderNumber"></span>
+            </p>
+
+            <p>
+                <strong>Обща сума:</strong>
+                <span id="paymentOrderTotal"></span> eur
+            </p>
+
+            <p>
+                <strong>Платено:</strong>
+                <span id="paymentAlreadyPaid"></span> eur
+            </p>
+
+            <p>
+                <strong>Остатък:</strong>
+                <span id="paymentOutstanding"></span> eur
+            </p>
+        </div>
 
         <form id="paymentForm"
               method="post"
@@ -195,42 +246,51 @@
                    th:name="${_csrf.parameterName}"
                    th:value="${_csrf.token}">
 
-            <label for="paymentAmount">Сума на плащането (eur)</label>
+            <label for="paymentAmount" class="form-label">
+                Сума (eur)
+            </label>
             <input id="paymentAmount"
                    type="number"
                    name="amount"
+                   class="status-select"
                    step="0.01"
                    required>
 
-            <label for="paymentMethod">Начин на плащане</label>
-            <select id="paymentMethod" name="paymentMethod" required>
+            <label for="paymentMethod" class="form-label">
+                Начин на плащане
+            </label>
+            <select id="paymentMethod"
+                    name="paymentMethod"
+                    class="status-select"
+                    required>
                 <option value="CASH">В брой</option>
                 <option value="BANK">По банка</option>
             </select>
 
-            <button type="submit" class="btn-table-action" id="paymentSubmitButton">
+            <button type="submit"
+                    class="btn-new-order"
+                    id="paymentSubmitButton">
                 Запиши
             </button>
 
             <button type="button"
-                    class="btn-table-action"
+                    class="btn-new-order"
                     onclick="closePaymentModal()">
                 Отказ
             </button>
         </form>
+
     </div>
 </div>
 
 <script>
-
-
     function openPaymentModal(button) {
         const modal = document.getElementById('paymentModal');
         const form = document.getElementById('paymentForm');
         const cancelled = button.dataset.cancelled === 'true';
 
         document.getElementById('paymentCustomerName').textContent =
-            document.querySelector('.page-title-blue').textContent.trim();
+            document.querySelector('.customer-details h2').textContent.trim();
 
         document.getElementById('paymentOrderNumber').textContent =
             button.dataset.orderNumber;
@@ -265,7 +325,7 @@
         const form = document.getElementById('paymentForm');
 
         document.getElementById('paymentCustomerName').textContent =
-            document.querySelector('.page-title-blue').textContent.trim();
+            document.querySelector('.customer-details h2').textContent.trim();
 
         document.getElementById('paymentOrderNumber').textContent =
             button.dataset.orderNumber;
@@ -328,7 +388,6 @@
         }
     );
 </script>
-
 
 </body>
 </html>

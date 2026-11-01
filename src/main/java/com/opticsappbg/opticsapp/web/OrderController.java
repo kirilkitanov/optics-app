@@ -169,7 +169,7 @@ public class OrderController {
 
             Model model) {
 
-        int pageSize = 10;
+        int pageSize = 15;
 
         if (page < 0) {
             page = 0;

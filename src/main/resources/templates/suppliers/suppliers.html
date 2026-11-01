@@ -1,10 +1,248 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доставчици</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+<div class="app-wrapper">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Доставчици</h1>
+
+                <form class="order-search-form" onsubmit="return false;">
+                    <input type="text"
+                           id="supplierSearch"
+                           class="order-search-input"
+                           placeholder="име на фирма, ЕИК или телефон"
+                           autocomplete="off">
+
+                    <button type="button"
+                            class="btn-new-order"
+                            onclick="filterSuppliers()">
+                        Търси
+                    </button>
+                </form>
+
+                <form class="order-search-form" onsubmit="return false;">
+                    <select id="balanceFilter" class="status-select customer-filter-select">
+                        <option value="all">Всички доставчици</option>
+                        <option value="owed">Само с дължими суми</option>
+                        <option value="zero">Без задължения</option>
+                        <option value="refund">Очакваме връщане</option>
+                    </select>
+                </form>
+
+                <a th:href="@{/suppliers/new}" class="btn-new-order">
+                    Нов доставчик
+                </a>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Фирма</th>
+                        <th>ЕИК</th>
+                        <th>МОЛ</th>
+                        <th>Телефон</th>
+                        <th>Имейл</th>
+                        <th>Общо фактури</th>
+                        <th>Платено</th>
+                        <th>Дължимо</th>
+                        <th>Преглед</th>
+                        <th>Редакция</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr class="customer-row order-row"
+                        th:each="summary : ${suppliers}"
+                        th:attr="
+                            data-name=${summary.supplier.companyName},
+                            data-eik=${summary.supplier.eik},
+                            data-phone=${summary.supplier.phone},
+                            data-balance=${summary.outstanding}">
+
+                        <td th:text="${summary.supplier.companyName}"></td>
+                        <td th:text="${summary.supplier.eik}"></td>
+                        <td th:text="${summary.supplier.mol}"></td>
+                        <td th:text="${summary.supplier.phone}"></td>
+                        <td th:text="${summary.supplier.email}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(summary.totalDeliveries, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
+                            th:classappend="${summary.outstanding > 0} ? 'status-completed' :
+                            (${summary.outstanding < 0} ? 'status-cancelled' : '')"></td>
+
+                        <td>
+                            <a th:href="@{/suppliers/{id}(id=${summary.supplier.id})}"
+                               class="btn-table-action">
+                                Отвори
+                            </a>
+                        </td>
+
+                        <td>
+                            <a th:href="@{/suppliers/{id}/edit(id=${summary.supplier.id})}"
+                               class="btn-table-action">
+                                Редакция
+                            </a>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(suppliers)}">
+                        <td colspan="10">Няма добавени доставчици.</td>
+                    </tr>
+
+                    <tr id="noSupplierResults" hidden>
+                        <td colspan="10" class="empty-table-message">
+                            Няма доставчици, отговарящи на търсенето.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('supplierSearch');
+        const balanceFilter = document.getElementById('balanceFilter');
+        const supplierRows = Array.from(document.querySelectorAll('.customer-row'));
+
+        let selectedIndex = -1;
+
+        searchInput.addEventListener('input', filterSuppliers);
+        balanceFilter.addEventListener('change', filterSuppliers);
+
+        supplierRows.forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest('a, select, button, input')) {
+                    return;
+                }
+                selectRow(row);
+            });
+        });
+
+        function getVisibleRows() {
+            return supplierRows.filter(function (row) {
+                return !row.hidden;
+            });
+        }
+
+        function selectRow(row) {
+            const visibleRows = getVisibleRows();
+
+            supplierRows.forEach(function (item) {
+                item.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = visibleRows.indexOf(row);
+
+            if (selectedIndex >= 0) {
+                row.classList.add('order-row-selected');
+                row.scrollIntoView({block: 'nearest'});
+            }
+        }
+
+        document.addEventListener('keydown', function (event) {
+            const target = event.target;
+
+            if (target.matches('input, textarea, select') || target.isContentEditable) {
+                return;
+            }
+
+            const visibleRows = getVisibleRows();
+
+            if (visibleRows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+
+                if (event.key === 'ArrowDown') {
+                    selectedIndex = selectedIndex < 0
+                        ? 0
+                        : Math.min(selectedIndex + 1, visibleRows.length - 1);
+                } else {
+                    selectedIndex = selectedIndex < 0
+                        ? visibleRows.length - 1
+                        : Math.max(selectedIndex - 1, 0);
+                }
+
+                selectRow(visibleRows[selectedIndex]);
+            }
+
+            if (event.key === 'Enter' && selectedIndex >= 0) {
+                const selectedRow = visibleRows[selectedIndex];
+                const actionLink = selectedRow.querySelector('.btn-table-action');
+
+                if (actionLink) {
+                    event.preventDefault();
+                    window.location.href = actionLink.href;
+                }
+            }
+        });
+
+        function filterSuppliers() {
+            const search = searchInput.value.trim().toLocaleLowerCase('bg');
+            const filter = balanceFilter.value;
+
+            let visibleCount = 0;
+
+            supplierRows.forEach(function (row) {
+                const name = (row.dataset.name || '').toLocaleLowerCase('bg');
+                const eik = (row.dataset.eik || '').toLocaleLowerCase('bg');
+                const phone = (row.dataset.phone || '').toLocaleLowerCase('bg');
+                const balance = Number(row.dataset.balance || 0);
+
+                const matchesSearch = name.includes(search)
+                    || eik.includes(search)
+                    || phone.includes(search);
+
+                let matchesBalance = true;
+
+                if (filter === 'owed') {
+                    matchesBalance = balance > 0;
+                } else if (filter === 'zero') {
+                    matchesBalance = balance === 0;
+                } else if (filter === 'refund') {
+                    matchesBalance = balance < 0;
+                }
+
+                row.hidden = !(matchesSearch && matchesBalance);
+
+                if (!row.hidden) {
+                    visibleCount++;
+                }
+            });
+
+            supplierRows.forEach(function (row) {
+                row.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = -1;
+
+            document.getElementById('noSupplierResults').hidden =
+                supplierRows.length === 0 || visibleCount > 0;
+        }
+
+        window.filterSuppliers = filterSuppliers;
+        filterSuppliers();
+    });
+</script>
+
 </body>
 </html>

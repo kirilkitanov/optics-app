@@ -1,4 +1,89 @@
 package com.opticsappbg.opticsapp.web;
 
+import com.opticsappbg.opticsapp.supplier.model.Supplier;
+import com.opticsappbg.opticsapp.supplier.service.SupplierService;
+import com.opticsappbg.opticsapp.web.dto.SupplierFormRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/suppliers")
+@RequiredArgsConstructor
 public class SupplierController {
+
+    private final SupplierService supplierService;
+
+    @GetMapping
+    public String showSuppliers(Model model) {
+        model.addAttribute(
+                "suppliers",
+                supplierService.getAllSupplierSummaries());
+        return "suppliers/suppliers";
+    }
+
+    @GetMapping("/new")
+    public String showCreateForm(Model model) {
+        model.addAttribute("supplierForm", new SupplierFormRequest());
+        model.addAttribute("isEdit", false);
+        return "suppliers/supplier-form";
+    }
+
+    @PostMapping
+    public String createSupplier(
+            @ModelAttribute("supplierForm") SupplierFormRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            supplierService.createSupplier(request);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Доставчикът е добавен успешно.");
+            return "redirect:/suppliers";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("supplierForm", request);
+            return "redirect:/suppliers/new";
+        }
+    }
+
+    @GetMapping("/{id}/edit")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        Supplier supplier = supplierService.getSupplierById(id);
+
+        SupplierFormRequest form = new SupplierFormRequest();
+        form.setCompanyName(supplier.getCompanyName());
+        form.setEik(supplier.getEik());
+        form.setVat(supplier.getVat());
+        form.setMol(supplier.getMol());
+        form.setPhone(supplier.getPhone());
+        form.setEmail(supplier.getEmail());
+        form.setAddress(supplier.getAddress());
+        form.setNote(supplier.getNote());
+
+        model.addAttribute("supplierForm", form);
+        model.addAttribute("supplierId", id);
+        model.addAttribute("isEdit", true);
+
+        return "suppliers/supplier-form";
+    }
+
+    @PostMapping("/{id}")
+    public String updateSupplier(
+            @PathVariable Long id,
+            @ModelAttribute("supplierForm") SupplierFormRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            supplierService.updateSupplier(id, request);
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Доставчикът е редактиран успешно.");
+            return "redirect:/suppliers";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            redirectAttributes.addFlashAttribute("supplierForm", request);
+            return "redirect:/suppliers/" + id + "/edit";
+        }
+    }
 }

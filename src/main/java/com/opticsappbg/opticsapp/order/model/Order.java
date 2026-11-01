@@ -38,7 +38,7 @@ public class Order {
     @Column
     private LocalDateTime updatedOn;
 
-    @Column(length = 1000)
+    @Column(length = 500)
     private String note;
 
     @Column(length = 500)

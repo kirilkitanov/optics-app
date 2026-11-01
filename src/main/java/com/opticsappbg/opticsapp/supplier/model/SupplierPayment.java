@@ -1,6 +1,7 @@
 package com.opticsappbg.opticsapp.supplier.model;
 
 import com.opticsappbg.opticsapp.customer.model.PaymentMethod;
+import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -46,5 +47,9 @@ public class SupplierPayment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "delivery_id", nullable = false)
+    private Delivery delivery;
 }
 

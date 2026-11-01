@@ -45,7 +45,12 @@
 
                         <td th:text="${order.orderNumber}"></td>
 
-                        <td th:text="${order.customer.fullName}"></td>
+                        <td>
+                            <a th:href="@{/customers/{id}(id=${order.customer.id})}"
+                               th:text="${order.customer.fullName}"
+                               style="color: inherit; text-decoration: none; cursor: pointer;">
+                            </a>
+                        </td>
 
                         <td th:text="${order.customer.phone}"></td>
 

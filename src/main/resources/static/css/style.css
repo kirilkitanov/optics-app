@@ -1206,16 +1206,37 @@ body > .app-wrapper > .main-container > .product-page {
     font-size: 13px;
 }
 
+.orders-title-search {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.orders-title-search .page-title-blue {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.order-search-form {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .order-search-input {
-    flex: 1;
-    min-width: 100px;
+    width: 180px;
     height: 32px;
     padding: 5px 10px;
+    box-sizing: border-box;
     border: 1px solid #d5dbe1;
     border-radius: 6px;
     font-size: 13px;
     outline: none;
     transform: translateY(4px);
+}
+
+.order-search-input:focus {
+    border-color: #1f4e79;
 }
 
 .order-row {
@@ -1319,12 +1340,15 @@ body:has(.content-index) .status-select,
 
 body:has(.customer-row) .content-header .order-search-form {
     display: flex;
+    justify-content: flex-start;
     align-items: center;
-    gap: 6px;
-    flex: 0 1 430px;
+    gap: 10px;
+    width: 100%;
 }
-body:has(.customer-row) #customerFilter {
+
+.customer-filter-select {
     flex: 0 0 140px;
+    transform: translateY(4px);
 }
 
 .customer-details {
@@ -1343,12 +1367,6 @@ body:has(.customer-row) #customerFilter {
     color: #1f4e79;
     font-size: 15px;
 }
-
-/*.content .table-container:has(.payment-history-actions) table {*/
-/*    min-width: 0;*/
-/*    width: 100%;*/
-/*    table-layout: auto;*/
-/*}*/
 
 .content .table-container:has(.payment-history-actions) th,
 .content .table-container:has(.payment-history-actions) td {
@@ -1401,4 +1419,11 @@ body:has(.customer-row) #customerFilter {
 
 .payment-delete-button:hover {
     background: #a61f1f;
+}
+
+.payment-details {
+    flex-direction: column;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 6px;
 }

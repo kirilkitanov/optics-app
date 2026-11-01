@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -34,10 +33,11 @@
                 </form>
 
                 <form class="order-search-form" onsubmit="return false;">
-                    <select id="customerFilter" class="order-search-input">
+                    <select id="customerFilter" class="status-select customer-filter-select">
                         <option value="all">Всички клиенти</option>
                         <option value="debtors">Само длъжници</option>
                         <option value="no-debt">Без задължения</option>
+                        <option value="creditors">Ние дължим</option>
                     </select>
                 </form>
 
@@ -68,7 +68,7 @@
                     </thead>
 
                     <tbody>
-                    <tr class="customer-row"
+                    <tr class="customer-row order-row"
                         th:each="summary : ${summaries}"
                         th:attr="data-outstanding=${summary.outstanding},
                                  data-name=${summary.customer.fullName},
@@ -82,7 +82,8 @@
                         <td th:text="${#numbers.formatDecimal(summary.totalOrders, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
                         <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
                         <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
-                            th:classappend="${summary.outstanding > 0} ? 'status-cancelled' : ''"></td>
+                            th:classappend="${summary.outstanding > 0} ? 'status-completed' :
+                    (${summary.outstanding < 0} ? 'status-cancelled' : '')"></td>
 
                         <td>
                             <a th:href="@{/customers/{id}(id=${summary.customer.id})}"
@@ -118,49 +119,131 @@
     document.addEventListener('DOMContentLoaded', function () {
         const searchInput = document.getElementById('customerSearch');
         const customerFilter = document.getElementById('customerFilter');
+        const customerRows = Array.from(document.querySelectorAll('.customer-row'));
+
+        let selectedIndex = -1;
 
         searchInput.addEventListener('input', filterCustomers);
         customerFilter.addEventListener('change', filterCustomers);
 
-        filterCustomers();
-    });
+        customerRows.forEach(function (row) {
+            row.addEventListener('click', function (event) {
+                if (event.target.closest('a, select, button, input')) {
+                    return;
+                }
 
-    function filterCustomers() {
-        const searchInput = document.getElementById('customerSearch');
-        const customerFilter = document.getElementById('customerFilter');
+                selectRow(row);
+            });
+        });
 
-        const search = searchInput.value.trim().toLocaleLowerCase('bg');
-        const filter = customerFilter.value;
+        function getVisibleRows() {
+            return customerRows.filter(function (row) {
+                return !row.hidden;
+            });
+        }
 
-        const rows = Array.from(document.querySelectorAll('.customer-row'));
-        let visibleCount = 0;
+        function selectRow(row) {
+            const visibleRows = getVisibleRows();
 
-        rows.forEach(function (row) {
-            const name = (row.dataset.name || '').toLocaleLowerCase('bg');
-            const phone = (row.dataset.phone || '').toLocaleLowerCase('bg');
-            const outstanding = Number(row.dataset.outstanding || 0);
+            customerRows.forEach(function (item) {
+                item.classList.remove('order-row-selected');
+            });
 
-            const matchesSearch =
-                name.includes(search) || phone.includes(search);
+            selectedIndex = visibleRows.indexOf(row);
 
-            let matchesFilter = true;
+            if (selectedIndex >= 0) {
+                row.classList.add('order-row-selected');
+                row.scrollIntoView({block: 'nearest'});
+            }
+        }
 
-            if (filter === 'debtors') {
-                matchesFilter = outstanding > 0;
-            } else if (filter === 'no-debt') {
-                matchesFilter = outstanding <= 0;
+        document.addEventListener('keydown', function (event) {
+            const target = event.target;
+
+            if (
+                target.matches('input, textarea, select') ||
+                target.isContentEditable
+            ) {
+                return;
             }
 
-            row.hidden = !(matchesSearch && matchesFilter);
+            const visibleRows = getVisibleRows();
 
-            if (!row.hidden) {
-                visibleCount++;
+            if (visibleRows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                event.preventDefault();
+
+                if (event.key === 'ArrowDown') {
+                    selectedIndex = selectedIndex < 0
+                        ? 0
+                        : Math.min(selectedIndex + 1, visibleRows.length - 1);
+                } else {
+                    selectedIndex = selectedIndex < 0
+                        ? visibleRows.length - 1
+                        : Math.max(selectedIndex - 1, 0);
+                }
+
+                selectRow(visibleRows[selectedIndex]);
+            }
+
+            if (event.key === 'Enter' && selectedIndex >= 0) {
+                const selectedRow = visibleRows[selectedIndex];
+                const actionLink = selectedRow.querySelector('.btn-table-action');
+
+                if (actionLink) {
+                    event.preventDefault();
+                    window.location.href = actionLink.href;
+                }
             }
         });
 
-        const noResults = document.getElementById('noCustomerResults');
-        noResults.hidden = rows.length === 0 || visibleCount > 0;
-    }
+        filterCustomers();
+
+        function filterCustomers() {
+            const search = searchInput.value.trim().toLocaleLowerCase('bg');
+            const filter = customerFilter.value;
+
+            let visibleCount = 0;
+
+            customerRows.forEach(function (row) {
+                const name = (row.dataset.name || '').toLocaleLowerCase('bg');
+                const phone = (row.dataset.phone || '').toLocaleLowerCase('bg');
+                const outstanding = Number(row.dataset.outstanding || 0);
+
+                const matchesSearch =
+                    name.includes(search) || phone.includes(search);
+
+                let matchesFilter = true;
+
+                if (filter === 'debtors') {
+                    matchesFilter = outstanding > 0;
+                } else if (filter === 'creditors') {
+                    matchesFilter = outstanding < 0;
+                } else if (filter === 'no-debt') {
+                    matchesFilter = outstanding === 0;
+                }
+
+                row.hidden = !(matchesSearch && matchesFilter);
+
+                if (!row.hidden) {
+                    visibleCount++;
+                }
+            });
+
+            customerRows.forEach(function (row) {
+                row.classList.remove('order-row-selected');
+            });
+
+            selectedIndex = -1;
+
+            const noResults = document.getElementById('noCustomerResults');
+            noResults.hidden = customerRows.length === 0 || visibleCount > 0;
+        }
+        window.filterCustomers = filterCustomers;
+    });
 </script>
 
 </body>
