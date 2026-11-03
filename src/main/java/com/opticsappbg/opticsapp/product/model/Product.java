@@ -55,7 +55,7 @@ public class Product {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "purchase_price")
+    @Column(name = "purchase_price", precision = 12, scale = 2)
     private BigDecimal purchasePrice;
 
     @Column(name = "retail_price", nullable = false)

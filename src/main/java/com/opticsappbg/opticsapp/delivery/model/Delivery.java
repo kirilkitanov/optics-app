@@ -30,7 +30,16 @@ public class Delivery {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
-    private Supplier supplier; // От кой доставчик е стоката
+    private Supplier supplier;
+
+    @Column(length = 500)
+    private String note;
+
+    @Column(name = "total_before_discount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal totalBeforeDiscount;
+
+    @Column(name = "discount_percentage", nullable = false, precision = 8, scale = 2)
+    private BigDecimal discountPercentage;
 
     @Column(nullable = false)
     private LocalDateTime createdOn;
@@ -42,8 +51,8 @@ public class Delivery {
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DeliveryItem> items = new ArrayList<>();
 
-    @Column(name = "total_amount", nullable = false)
-    private BigDecimal totalAmount; // Обща сума на доставката (напр. 1000 лв.)
+    @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
+    private BigDecimal totalAmount;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

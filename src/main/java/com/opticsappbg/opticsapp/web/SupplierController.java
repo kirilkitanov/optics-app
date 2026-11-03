@@ -1,13 +1,27 @@
+
 package com.opticsappbg.opticsapp.web;
 
+import com.opticsappbg.opticsapp.delivery.model.Delivery;
+import com.opticsappbg.opticsapp.delivery.service.DeliveryService;
 import com.opticsappbg.opticsapp.supplier.model.Supplier;
+import com.opticsappbg.opticsapp.supplier.model.SupplierPayment;
+import com.opticsappbg.opticsapp.supplier.service.SupplierPaymentService;
 import com.opticsappbg.opticsapp.supplier.service.SupplierService;
+import com.opticsappbg.opticsapp.user.model.User;
+import com.opticsappbg.opticsapp.user.service.UserService;
 import com.opticsappbg.opticsapp.web.dto.SupplierFormRequest;
+import com.opticsappbg.opticsapp.customer.model.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
+
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/suppliers")
@@ -15,6 +29,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class SupplierController {
 
     private final SupplierService supplierService;
+    private final DeliveryService deliveryService;
+    private final SupplierPaymentService supplierPaymentService;
+    private final UserService userService;
 
     @GetMapping
     public String showSuppliers(Model model) {
@@ -22,6 +39,44 @@ public class SupplierController {
                 "suppliers",
                 supplierService.getAllSupplierSummaries());
         return "suppliers/suppliers";
+    }
+
+    @GetMapping("/{id}")
+    public String showSupplierDetails(
+            @PathVariable Long id,
+            Model model) {
+
+        Supplier supplier = supplierService.getSupplierById(id);
+
+        var deliveries = deliveryService.getDeliveriesBySupplierId(id);
+
+        Map<Long, BigDecimal> paidAmounts = new HashMap<>();
+        Map<Long, BigDecimal> remainingAmounts = new HashMap<>();
+        Map<Long, List<SupplierPayment>> paymentsByDelivery = new HashMap<>();
+
+        for (Delivery delivery : deliveries) {
+            BigDecimal paid =
+                    supplierPaymentService.getTotalPaid(delivery.getId());
+
+            BigDecimal remaining =
+                    delivery.getTotalAmount().subtract(paid);
+
+            paidAmounts.put(delivery.getId(), paid);
+            remainingAmounts.put(delivery.getId(), remaining);
+
+            paymentsByDelivery.put(
+                    delivery.getId(),
+                    supplierPaymentService.getPaymentsForDelivery(delivery.getId())
+            );
+        }
+
+        model.addAttribute("supplier", supplier);
+        model.addAttribute("deliveries", deliveries);
+        model.addAttribute("paidAmounts", paidAmounts);
+        model.addAttribute("remainingAmounts", remainingAmounts);
+        model.addAttribute("paymentsByDelivery", paymentsByDelivery);
+
+        return "suppliers/supplier-details";
     }
 
     @GetMapping("/new")
@@ -85,5 +140,57 @@ public class SupplierController {
             redirectAttributes.addFlashAttribute("supplierForm", request);
             return "redirect:/suppliers/" + id + "/edit";
         }
+    }
+
+    @PostMapping("/{supplierId}/deliveries/{deliveryId}/payments")
+    public String addPayment(
+            @PathVariable Long supplierId,
+            @PathVariable Long deliveryId,
+            @RequestParam BigDecimal amount,
+            @RequestParam PaymentMethod paymentMethod,
+            @RequestParam(required = false) String note,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            User currentUser = userService.getCurrentUser(authentication);
+
+            supplierPaymentService.addPayment(
+                    deliveryId, amount, paymentMethod, note, currentUser);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Плащането е записано успешно.");
+
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/suppliers/" + supplierId;
+    }
+
+    @PostMapping("/{supplierId}/deliveries/{deliveryId}/refunds")
+    public String addRefund(
+            @PathVariable Long supplierId,
+            @PathVariable Long deliveryId,
+            @RequestParam BigDecimal amount,
+            @RequestParam PaymentMethod paymentMethod,
+            @RequestParam(required = false) String note,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            User currentUser = userService.getCurrentUser(authentication);
+
+            supplierPaymentService.addRefund(
+                    deliveryId, amount, paymentMethod, note, currentUser);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Върнатата сума е записана успешно.");
+
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/suppliers/" + supplierId;
     }
 }

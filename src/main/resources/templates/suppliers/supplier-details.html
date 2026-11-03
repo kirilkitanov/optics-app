@@ -1,10 +1,335 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детайли за доставчик</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+<div class="app-wrapper">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+            <div class="content-header">
+                <h1 class="page-title-blue">Фактури и плащания</h1>
+
+                <a th:href="@{/suppliers}" class="btn-new-order">
+                    Назад
+                </a>
+            </div>
+
+            <div th:if="${successMessage}"
+                 th:text="${successMessage}"
+                 class="success-message">
+            </div>
+
+            <div th:if="${errorMessage}"
+                 th:text="${errorMessage}"
+                 style="color: red; margin-bottom: 12px;">
+            </div>
+
+            <div class="customer-details">
+                <h2 th:text="${supplier.companyName}">Доставчик</h2>
+
+                <p>
+                    <strong>ЕИК:</strong>
+                    <span th:text="${supplier.eik}"></span>
+                </p>
+
+                <p>
+                    <strong>ДДС номер:</strong>
+                    <span th:text="${supplier.vat}"></span>
+                </p>
+
+                <p>
+                    <strong>МОЛ:</strong>
+                    <span th:text="${supplier.mol}"></span>
+                </p>
+
+                <p>
+                    <strong>Телефон:</strong>
+                    <span th:text="${supplier.phone}"></span>
+                </p>
+
+                <p>
+                    <strong>Имейл:</strong>
+                    <span th:text="${supplier.email}"></span>
+                </p>
+
+                <p>
+                    <strong>Адрес:</strong>
+                    <span th:text="${supplier.address}"></span>
+                </p>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Фактура №</th>
+                        <th>Дата</th>
+                        <th>Обща сума</th>
+                        <th>Платено</th>
+                        <th>Остатък</th>
+                        <th>Действие</th>
+                        <th>История на плащанията</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <tr th:each="delivery : ${deliveries}">
+                        <td>
+                            <a th:href="@{/deliveries/{id}(id=${delivery.id})}"
+                               th:text="${delivery.invoiceNumber}"
+                               style="color: inherit; text-decoration: none; cursor: pointer;">
+                            </a>
+                        </td>
+
+                        <td th:text="${#temporals.format(delivery.invoiceDate, 'dd.MM.yyyy')}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(delivery.totalAmount, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(paidAmounts[delivery.id], 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+
+                        <td th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'POINT', 2, 'POINT') + ' eur'}"
+                            th:classappend="${remainingAmounts[delivery.id] > 0} ? 'status-completed' :
+                            (${remainingAmounts[delivery.id] < 0} ? 'status-cancelled' : '')">
+                        </td>
+
+                        <td>
+                            <button type="button"
+                                    class="btn-table-action"
+                                    th:if="${remainingAmounts[delivery.id] != null and remainingAmounts[delivery.id].compareTo(T(java.math.BigDecimal).ZERO) != 0}"
+                                    th:attr="data-delivery-id=${delivery.id},
+                                             data-invoice-number=${delivery.invoiceNumber},
+                                             data-delivery-total=${delivery.totalAmount},
+                                             data-paid=${paidAmounts[delivery.id]},
+                                             data-outstanding=${remainingAmounts[delivery.id]},
+                                             data-refund=${remainingAmounts[delivery.id] < 0}"
+                                    onclick="openPaymentModal(this)">
+
+                                <span th:if="${remainingAmounts[delivery.id] > 0}">
+                                    Плащане
+                                </span>
+
+                                <span th:if="${remainingAmounts[delivery.id] < 0}">
+                                    Върни сума
+                                </span>
+                            </button>
+                        </td>
+
+                        <td>
+                            <div th:if="${#lists.isEmpty(paymentsByDelivery[delivery.id])}">
+                                Няма плащания
+                            </div>
+
+                            <div th:each="payment : ${paymentsByDelivery[delivery.id]}"
+                                 style="margin-bottom: 8px;">
+
+                                <strong th:text="${#numbers.formatDecimal(payment.amount, 1, 'POINT', 2, 'POINT')}"></strong>
+                                <strong> eur</strong>
+                                <span>,</span>
+                                <span th:text="${payment.paymentMethod.displayName + ','}"></span>
+                                <span th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy HH:mm')}"></span>
+
+                                <br>
+
+                                <div class="payment-history-actions">
+                                    <span class="payment-created-by">
+                                        Въвел:
+                                        <span th:text="${payment.createdBy.username}"></span>
+                                    </span>
+                                </div>
+
+                                <div th:if="${payment.note != null and !payment.note.isEmpty()}">
+                                    <span th:text="${payment.note}"></span>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(deliveries)}">
+                        <td colspan="7">
+                            Няма фактури за този доставчик.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+    </div>
+</div>
+
+<!-- Modal за плащане и връщане на сума -->
+<div id="paymentModal" class="modal" style="display: none;" aria-hidden="true">
+    <div class="modal-content">
+
+        <h3 id="paymentModalTitle" class="page-title-blue">
+            Добавяне на плащане
+        </h3>
+
+        <div class="customer-details payment-details">
+
+            <p>
+                <strong>Доставчик:</strong>
+                <span id="paymentSupplierName"></span>
+            </p>
+
+            <p>
+                <strong>Фактура №:</strong>
+                <span id="paymentInvoiceNumber"></span>
+            </p>
+
+            <p>
+                <strong>Обща сума:</strong>
+                <span id="paymentDeliveryTotal"></span> eur
+            </p>
+
+            <p>
+                <strong>Платено:</strong>
+                <span id="paymentAlreadyPaid"></span> eur
+            </p>
+
+            <p>
+                <strong>Остатък:</strong>
+                <span id="paymentOutstanding"></span> eur
+            </p>
+        </div>
+
+        <form id="paymentForm"
+              method="post"
+              th:attr="data-supplier-id=${supplier.id}">
+
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <label for="paymentAmount" class="form-label">
+                Сума (eur)
+            </label>
+
+            <input id="paymentAmount"
+                   type="number"
+                   name="amount"
+                   class="status-select"
+                   min="0.01"
+                   step="0.01"
+                   required>
+
+            <label for="paymentMethod" class="form-label">
+                Начин на плащане
+            </label>
+
+            <select id="paymentMethod"
+                    name="paymentMethod"
+                    class="status-select"
+                    required>
+                <option value="CASH">В брой</option>
+                <option value="BANK">По банка</option>
+            </select>
+
+            <label for="paymentNote" class="form-label">
+                Бележка
+            </label>
+
+            <input id="paymentNote"
+                   type="text"
+                   name="note"
+                   class="status-select"
+                   maxlength="500">
+
+            <button type="submit"
+                    class="btn-new-order"
+                    id="paymentSubmitButton">
+                Запиши
+            </button>
+
+            <button type="button"
+                    class="btn-new-order"
+                    onclick="closePaymentModal()">
+                Отказ
+            </button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    function openPaymentModal(button) {
+        const modal = document.getElementById('paymentModal');
+        const form = document.getElementById('paymentForm');
+        const refund = button.dataset.refund === 'true';
+
+        document.getElementById('paymentSupplierName').textContent =
+            document.querySelector('.customer-details h2').textContent.trim();
+
+        document.getElementById('paymentInvoiceNumber').textContent =
+            button.dataset.invoiceNumber;
+
+        document.getElementById('paymentDeliveryTotal').textContent =
+            formatAmount(button.dataset.deliveryTotal);
+
+        document.getElementById('paymentAlreadyPaid').textContent =
+            formatAmount(button.dataset.paid);
+
+        document.getElementById('paymentOutstanding').textContent =
+            formatAmount(button.dataset.outstanding);
+
+        const supplierId = form.dataset.supplierId;
+        const deliveryId = button.dataset.deliveryId;
+
+        form.action = '/suppliers/' + supplierId
+            + '/deliveries/' + deliveryId
+            + (refund ? '/refunds' : '/payments');
+
+        document.getElementById('paymentModalTitle').textContent =
+            refund ? 'Връщане на сума' : 'Добавяне на плащане';
+
+        document.getElementById('paymentSubmitButton').textContent =
+            'Запиши';
+
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentMethod').value = 'CASH';
+        document.getElementById('paymentNote').value = '';
+
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.getElementById('paymentAmount').focus();
+    }
+
+    function closePaymentModal() {
+        const modal = document.getElementById('paymentModal');
+
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function formatAmount(value) {
+        const amount = Number(value);
+        return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closePaymentModal();
+        }
+    });
+
+    document.getElementById('paymentModal').addEventListener(
+        'click',
+        function (event) {
+            if (event.target === this) {
+                closePaymentModal();
+            }
+        }
+    );
+</script>
+
 </body>
 </html>

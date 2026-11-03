@@ -4,7 +4,7 @@ import com.opticsappbg.opticsapp.customer.model.Customer;
 import com.opticsappbg.opticsapp.customer.service.CustomerPaymentService;
 import com.opticsappbg.opticsapp.customer.service.CustomerService;
 import com.opticsappbg.opticsapp.user.model.User;
-import com.opticsappbg.opticsapp.user.repository.UserRepository;
+import com.opticsappbg.opticsapp.user.service.UserService;
 import com.opticsappbg.opticsapp.web.dto.CreateCustomerRequest;
 import com.opticsappbg.opticsapp.web.dto.CustomerDto;
 import com.opticsappbg.opticsapp.web.dto.CustomerFormRequest;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.opticsappbg.opticsapp.security.AuthenticationDetails;
 
 @RequiredArgsConstructor
 @Controller
@@ -23,7 +22,7 @@ public class CustomerController {
 
     private final CustomerService customerService;
     private final CustomerPaymentService customerPaymentService;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @PostMapping("/customers/quick-create")
     @ResponseBody
@@ -125,12 +124,7 @@ public class CustomerController {
             RedirectAttributes redirectAttributes) {
 
         try {
-            AuthenticationDetails details =
-                    (AuthenticationDetails) authentication.getPrincipal();
-
-            User currentUser = userRepository.findById(details.getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Потребителят не е намерен."));
+            User currentUser = userService.getCurrentUser(authentication);
 
             customerPaymentService.addPayment(
                     orderId,

@@ -5,12 +5,13 @@ import com.opticsappbg.opticsapp.user.model.User;
 import com.opticsappbg.opticsapp.user.model.UserRole;
 import com.opticsappbg.opticsapp.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner; // Добавяме този импорт
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 
@@ -62,6 +63,18 @@ public class UserService implements UserDetailsService, CommandLineRunner {
                 user.getRole(),
                 user.isActive()
         );
+    }
+
+    public User getCurrentUser(Authentication authentication) {
+        if (authentication == null ||
+                !(authentication.getPrincipal() instanceof AuthenticationDetails)) {
+            throw new IllegalArgumentException("Потребителят не е намерен.");
+        }
+
+        AuthenticationDetails details =
+                (AuthenticationDetails) authentication.getPrincipal();
+
+        return getById(details.getUserId());
     }
 }
 

@@ -21,5 +21,6 @@ public class ProductLookupResponse {
     private BigDecimal addPower;
     private BigDecimal prism;
     private BigDecimal retailPrice;
+    private BigDecimal purchasePrice;
 }
 

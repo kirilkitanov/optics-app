@@ -2,22 +2,25 @@ package com.opticsappbg.opticsapp.web;
 
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.delivery.service.DeliveryService;
+import com.opticsappbg.opticsapp.product.service.ProductService;
+import com.opticsappbg.opticsapp.supplier.service.SupplierService;
+import com.opticsappbg.opticsapp.user.service.UserService;
+import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
+import com.opticsappbg.opticsapp.web.dto.CreateDeliveryRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
 import com.opticsappbg.opticsapp.supplier.service.SupplierPaymentService;
-import com.opticsappbg.opticsapp.supplier.service.SupplierPaymentService;
-
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
 
@@ -28,6 +31,9 @@ public class DeliveryController {
 
     private final DeliveryService deliveryService;
     private final SupplierPaymentService supplierPaymentService;
+    private final ProductService productService;
+    private final SupplierService supplierService;
+    private final UserService userService;
 
     @GetMapping
     public String showDeliveriesList(
@@ -117,5 +123,49 @@ public class DeliveryController {
         );
 
         return "deliveries/delivery-details";
+    }
+
+    @GetMapping("/new")
+    public String showNewDeliveryForm(Model model) {
+        CreateDeliveryRequest request = new CreateDeliveryRequest();
+
+        request.setItems(List.of(new CreateDeliveryItemRequest()));
+
+        model.addAttribute("createDeliveryRequest", request);
+        model.addAttribute("suppliers", supplierService.getAllSuppliers());
+        model.addAttribute("brands", productService.getUniqueBrandNames());
+        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+
+        return "deliveries/new-delivery";
+    }
+
+    @PostMapping("/new")
+    public String createDelivery(
+            @ModelAttribute CreateDeliveryRequest request,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            Delivery delivery = deliveryService.createDelivery(
+                    request,
+                    userService.getCurrentUser(authentication)
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Доставката е записана успешно."
+            );
+
+            return "redirect:/deliveries/" + delivery.getId();
+
+        } catch (IllegalArgumentException e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    e.getMessage()
+            );
+
+            return "redirect:/deliveries/new";
+        }
     }
 }

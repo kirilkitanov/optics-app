@@ -309,6 +309,20 @@ public class ProductService {
         );
     }
 
+    public List<Product> findProductsByCharacteristics(CreateDeliveryItemRequest req) {
+
+        return productRepository.findProductsByCharacteristics(
+                req.getCategory(),
+                req.getBrand(),
+                req.getModel(),
+                req.getSizeOrDiameter(),
+                req.getSph() != null ? req.getSph() : BigDecimal.ZERO,
+                req.getCyl() != null ? req.getCyl() : BigDecimal.ZERO,
+                req.getAddPower() != null ? req.getAddPower() : BigDecimal.ZERO,
+                req.getPrism() != null ? req.getPrism() : BigDecimal.ZERO
+        );
+    }
+
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }

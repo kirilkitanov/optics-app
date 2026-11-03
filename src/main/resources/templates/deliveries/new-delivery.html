@@ -1,10 +1,582 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Нова доставка</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta th:name="_csrf" th:content="${_csrf.token}"/>
+    <meta th:name="_csrf_header" th:content="${_csrf.headerName}"/>
 </head>
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content new-order-page">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Нова доставка</h1>
+                <a th:href="@{/deliveries}" class="btn-new-order">Назад</a>
+            </div>
+
+            <div class="table-container">
+
+                <div id="productErrorMessage"
+                     class="product-error"
+                     hidden>
+                </div>
+
+                <form th:action="@{/deliveries/new}"
+                      th:object="${createDeliveryRequest}"
+                      method="POST"
+                      novalidate
+                      onsubmit="if (!validateBrands()) return false;">
+
+                    <div class="item-fields">
+
+                        <div class="form-group">
+                            <label class="form-label" for="supplierId">
+                                Доставчик *
+                            </label>
+
+                            <select id="supplierId"
+                                    name="supplierId"
+                                    class="status-select"
+                                    required>
+                                <option value="">-- Избери доставчик --</option>
+
+                                <option th:each="supplier : ${suppliers}"
+                                        th:value="${supplier.id}"
+                                        th:text="${supplier.companyName}"
+                                        th:selected="${createDeliveryRequest.supplierId == supplier.id}">
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="invoiceNumber">
+                                Номер на фактура *
+                            </label>
+
+                            <input type="text"
+                                   id="invoiceNumber"
+                                   name="invoiceNumber"
+                                   class="status-select"
+                                   maxlength="100"
+                                   required
+                                   th:value="${createDeliveryRequest.invoiceNumber}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="invoiceDate">
+                                Дата на фактура *
+                            </label>
+
+                            <input type="date"
+                                   id="invoiceDate"
+                                   name="invoiceDate"
+                                   class="status-select"
+                                   required
+                                   th:value="${createDeliveryRequest.invoiceDate != null
+                                   ? #temporals.format(createDeliveryRequest.invoiceDate, 'yyyy-MM-dd') : ''}">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="deliveryNote">
+                                Бележка
+                            </label>
+
+                            <input type="text"
+                                   id="deliveryNote"
+                                   name="note"
+                                   class="status-select order-note-input"
+                                   maxlength="500"
+                                   placeholder="Бележка към доставката..."
+                                   th:value="${createDeliveryRequest.note}">
+                        </div>
+
+                    </div>
+
+
+                    <h3 class="section-title">Продукти в доставката</h3>
+
+                    <div id="prescriptionItems">
+
+                        <div class="item-row"
+                             th:each="item, itemStat : ${createDeliveryRequest.items}">
+
+                            <div class="item-fields">
+
+                                <div class="item-field">
+                                    <label><span class="item-number"></span>Категория</label>
+                                    <select th:name="'items[' + ${itemStat.index} + '].category'"
+                                            class="status-select category-trigger"
+                                            onchange="toggleFieldsByCategory(this)">
+                                        <option value="LENS"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).LENS}">
+                                            Стъкла
+                                        </option>
+                                        <option value="FRAME"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).FRAME}">
+                                            Рамка
+                                        </option>
+                                        <option value="SUNGLASSES"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).SUNGLASSES}">
+                                            Слънчеви
+                                        </option>
+                                        <option value="CONTACT_LENS"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).CONTACT_LENS}">
+                                            Контактни лещи
+                                        </option>
+                                        <option value="ACCESSORY"
+                                                th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).ACCESSORY}">
+                                            Аксесоар
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Баркод</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].barcode'"
+                                           th:value="${item.barcode}"
+                                           class="status-select barcode-input"
+                                           placeholder="Сканирай"
+                                           onchange="autoFillByBarcode(this)"
+                                           onkeydown="handleBarcodeKeydown(event, this)">
+
+                                    <input type="hidden"
+                                           th:name="'items[' + ${itemStat.index} + '].productId'"
+                                           th:value="${item.productId}"
+                                           class="product-id-input">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Бранд</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].brand'"
+                                           th:value="${item.brand}"
+                                           class="status-select brand-input"
+                                           list="brandSuggestions"
+                                           oninput="updateModelsForCurrentRow(this)"
+                                           onchange="checkProductByCharacteristics(this)"
+                                           required>
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Модел</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].model'"
+                                           th:value="${item.model}"
+                                           class="status-select model-input"
+                                           list="modelSuggestions"
+                                           onfocus="filterModelsForCurrentRow(this)"
+                                           onchange="checkProductByCharacteristics(this)">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Диаметър / Размер</label>
+                                    <input type="text"
+                                           th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
+                                           th:value="${item.sizeOrDiameter}"
+                                           class="status-select"
+                                           onchange="checkProductByCharacteristics(this)">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Количество</label>
+                                    <input type="number"
+                                           min="1"
+                                           th:name="'items[' + ${itemStat.index} + '].quantity'"
+                                           th:value="${item.quantity != null ? item.quantity : 1}"
+                                           class="status-select">
+                                </div>
+
+                                <div class="item-field">
+                                    <label>Доставна цена</label>
+                                    <input type="number"
+                                           lang="en"
+                                           min="0"
+                                           step="0.01"
+                                           th:name="'items[' + ${itemStat.index} + '].purchasePriceAtDelivery'"
+                                           th:value="${item.purchasePriceAtDelivery}"
+                                           class="status-select purchase-price-input"
+                                           required>
+                                </div>
+
+                            </div>
+
+                            <div class="diopter-section">
+                                <div class="item-fields">
+
+                                    <div class="item-field">
+                                        <label>SPH</label>
+                                        <input type="number" lang="en" step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].sph'"
+                                               th:value="${item.sph != null ? item.sph : 0}"
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>CYL</label>
+                                        <input type="number" lang="en" step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].cyl'"
+                                               th:value="${item.cyl != null ? item.cyl : 0}"
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>ADD</label>
+                                        <input type="number" lang="en" step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].addPower'"
+                                               th:value="${item.addPower != null ? item.addPower : 0}"
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>PRISM</label>
+                                        <input type="number" lang="en" step="0.25"
+                                               th:name="'items[' + ${itemStat.index} + '].prism'"
+                                               th:value="${item.prism != null ? item.prism : 0}"
+                                               class="status-select"
+                                               onchange="checkProductByCharacteristics(this)">
+                                    </div>
+
+                                    <div class="item-actions">
+                                        <button type="button"
+                                                onclick="removeRow(this)"
+                                                class="btn-remove-row">
+                                            Премахни
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <datalist id="brandSuggestions">
+                        <option th:each="b : ${brands}" th:value="${b}"></option>
+                    </datalist>
+
+                    <datalist id="modelSuggestions"></datalist>
+
+                    <button type="button" id="addRowBtn" class="btn-new-order">
+                        Добави продукт
+                    </button>
+
+                    <div class="financial-box">
+
+                        <div class="financial-group">
+                            <label>Общо</label>
+                            <input type="number"
+                                   lang="en"
+                                   step="0.01"
+                                   name="totalBeforeDiscount"
+                                   readonly
+                                   value="0">
+                        </div>
+
+                        <div class="financial-group">
+                            <label>Отстъпка / надценка %</label>
+                            <input type="number"
+                                   lang="en"
+                                   step="0.01"
+                                   name="discountPercentage"
+                                   th:value="${createDeliveryRequest.discountPercentage != null ? createDeliveryRequest.discountPercentage : 0}">
+                        </div>
+
+                        <div class="financial-group">
+                            <label>Крайна сума по фактура</label>
+                            <input type="number"
+                                   lang="en"
+                                   step="0.01"
+                                   name="totalAmount"
+                                   th:value="${createDeliveryRequest.totalAmount}">
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order">Запази доставката</button>
+                    </div>
+
+
+                </form>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
+<script>
+    function updateItemNumbers() {
+        document.querySelectorAll('#prescriptionItems .item-row')
+            .forEach((row, index) => {
+                const number = row.querySelector('.item-number');
+                if (number) {
+                    number.textContent = `${index + 1}. `;
+                }
+            });
+    }
+
+    function reindexRows() {
+        document.querySelectorAll('#prescriptionItems .item-row')
+            .forEach((row, index) => {
+                row.querySelectorAll('input, select').forEach(el => {
+                    if (el.name) {
+                        const field = el.name.split('.').pop();
+                        el.name = `items[${index}].${field}`;
+                    }
+                });
+            });
+
+        updateItemNumbers();
+    }
+
+    document.getElementById('addRowBtn').addEventListener('click', function () {
+        const container = document.getElementById('prescriptionItems');
+        const rows = container.querySelectorAll('.item-row');
+
+        if (rows.length === 0) return;
+
+        const newRow = rows[0].cloneNode(true);
+
+        newRow.querySelectorAll('input, select').forEach(el => {
+            if (el.tagName === 'INPUT') {
+                if (el.name.endsWith('.quantity')) {
+                    el.value = '1';
+                } else if (
+                    el.name.endsWith('.sph') ||
+                    el.name.endsWith('.cyl') ||
+                    el.name.endsWith('.addPower') ||
+                    el.name.endsWith('.prism')
+                ) {
+                    el.value = '0';
+                } else {
+                    el.value = '';
+                }
+            }
+
+            if (el.tagName === 'SELECT') {
+                el.selectedIndex = 0;
+            }
+        });
+
+        container.appendChild(newRow);
+
+        toggleFieldsByCategory(newRow.querySelector('.category-trigger'));
+        reindexRows();
+        recalcBaseTotal();
+    });
+
+    function removeRow(button) {
+        const container = document.getElementById('prescriptionItems');
+        const rows = container.querySelectorAll('.item-row');
+
+        if (rows.length <= 1) {
+            showProductError('Доставката трябва да съдържа поне един продукт!');
+            return;
+        }
+
+        button.closest('.item-row').remove();
+
+        reindexRows();
+        recalcBaseTotal();
+    }
+
+    function validateBrands() {
+        const rows = document.querySelectorAll('#prescriptionItems .item-row');
+
+        for (let i = 0; i < rows.length; i++) {
+            const brandInput = rows[i].querySelector('.brand-input');
+
+            if (!brandInput || !brandInput.value.trim()) {
+                showProductError(`Моля, въведете бранд за продукт №${i + 1}.`);
+                brandInput?.focus();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function getBaseTotal() {
+        return parseFloat(
+            document.querySelector('input[name="totalBeforeDiscount"]').value || 0
+        );
+    }
+
+    function setTotal(value) {
+        document.querySelector('input[name="totalAmount"]').value = value.toFixed(2);
+    }
+
+    function setDiscount(value) {
+        document.querySelector('input[name="discountPercentage"]').value = value.toFixed(2);
+    }
+
+    function recalcBaseTotal() {
+        let baseTotal = 0;
+
+        document.querySelectorAll('#prescriptionItems .item-row').forEach(row => {
+            const quantity = parseFloat(
+                row.querySelector('input[name$=".quantity"]')?.value || 0
+            );
+
+            const price = parseFloat(
+                row.querySelector('input[name$=".purchasePriceAtDelivery"]')?.value || 0
+            );
+
+            baseTotal += quantity * price;
+        });
+
+        document.querySelector('input[name="totalBeforeDiscount"]').value =
+            baseTotal.toFixed(2);
+
+        const discount = parseFloat(
+            document.querySelector('input[name="discountPercentage"]').value || 0
+        );
+
+        setTotal(baseTotal - (baseTotal * discount / 100));
+
+        return baseTotal;
+    }
+
+    document.querySelector('input[name="discountPercentage"]')
+        .addEventListener('input', function () {
+            const base = getBaseTotal();
+            const discount = parseFloat(this.value || 0);
+
+            setTotal(base - (base * discount / 100));
+        });
+
+    document.querySelector('input[name="totalAmount"]')
+        .addEventListener('input', function () {
+            const base = getBaseTotal();
+            const total = parseFloat(this.value || 0);
+
+            if (base <= 0) {
+                setDiscount(0);
+                return;
+            }
+
+            setDiscount(((base - total) / base) * 100);
+        });
+
+    document.addEventListener('input', function (event) {
+        if (
+            event.target.name?.endsWith('.quantity') ||
+            event.target.name?.endsWith('.purchasePriceAtDelivery')
+        ) {
+            recalcBaseTotal();
+        }
+    });
+
+    function showProductError(message) {
+        const errorBox = document.getElementById('productErrorMessage');
+        errorBox.textContent = message;
+        errorBox.hidden = false;
+    }
+
+    function toggleFieldsByCategory(selectElement) {
+        const row = selectElement.closest('.item-row');
+        const diopterSection = row.querySelector('.diopter-section');
+
+        if (!diopterSection) return;
+
+        if (
+            selectElement.value === 'LENS' ||
+            selectElement.value === 'CONTACT_LENS'
+        ) {
+            diopterSection.classList.remove('hidden-field');
+        } else {
+            diopterSection.classList.add('hidden-field');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateItemNumbers();
+
+        document.querySelectorAll('.category-trigger').forEach(select => {
+            toggleFieldsByCategory(select);
+        });
+
+        recalcBaseTotal();
+    });
+
+    function handleBarcodeKeydown(event, input) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            autoFillByBarcode(input);
+        }
+    }
+
+    async function autoFillByBarcode(input) {
+        const barcode = input.value.trim();
+
+        if (!barcode) return;
+
+        const row = input.closest('.item-row');
+
+        try {
+            const response = await fetch(
+                `/products/lookup-by-barcode?barcode=${encodeURIComponent(barcode)}`
+            );
+
+            if (!response.ok) {
+                showProductError('Не е намерен продукт с този баркод.');
+                return;
+            }
+
+            const product = await response.json();
+
+            row.querySelector('.product-id-input').value = product.id;
+            row.querySelector('.category-trigger').value = product.category;
+            row.querySelector('.brand-input').value = product.brand || '';
+            row.querySelector('.model-input').value = product.model || '';
+
+            row.querySelector('input[name$=".sizeOrDiameter"]').value =
+                product.sizeOrDiameter || '';
+
+            row.querySelector('input[name$=".sph"]').value =
+                product.sph ?? 0;
+
+            row.querySelector('input[name$=".cyl"]').value =
+                product.cyl ?? 0;
+
+            row.querySelector('input[name$=".addPower"]').value =
+                product.addPower ?? 0;
+
+            row.querySelector('input[name$=".prism"]').value =
+                product.prism ?? 0;
+
+            if (product.purchasePrice != null) {
+                row.querySelector('.purchase-price-input').value =
+                    Number(product.purchasePrice).toFixed(2);
+            }
+
+            toggleFieldsByCategory(row.querySelector('.category-trigger'));
+            recalcBaseTotal();
+
+        } catch (error) {
+            console.error(error);
+            showProductError('Грешка при търсене на продукта по баркод.');
+        }
+    }
+</script>
+
 </body>
 </html>

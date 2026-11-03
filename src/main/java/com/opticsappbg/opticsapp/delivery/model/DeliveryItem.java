@@ -30,8 +30,8 @@ public class DeliveryItem {
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "purchase_price_at_delivery", nullable = false)
-    private BigDecimal purchasePriceAtDelivery; // Доставната цена по тази конкретна фактура
+    @Column(name = "purchase_price_at_delivery", nullable = false, precision = 12, scale = 2)
+    private BigDecimal purchasePriceAtDelivery;
 
     @Column(nullable = false)
     private LocalDateTime createdOn;

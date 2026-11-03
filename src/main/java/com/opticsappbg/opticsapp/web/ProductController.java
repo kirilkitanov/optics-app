@@ -56,7 +56,8 @@ public class ProductController {
                         product.getCyl(),
                         product.getAddPower(),
                         product.getPrism(),
-                        product.getRetailPrice()
+                        product.getRetailPrice(),
+                        product.getPurchasePrice()
                 ))
                 .toList();
     }
@@ -95,7 +96,8 @@ public class ProductController {
                 product.getCyl(),
                 product.getAddPower(),
                 product.getPrism(),
-                product.getRetailPrice()
+                product.getRetailPrice(),
+                product.getPurchasePrice()
         );
     }
 

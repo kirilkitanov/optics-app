@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -69,13 +70,15 @@ public class DeliveryService {
         Delivery delivery = new Delivery();
 
         delivery.setInvoiceNumber(request.getInvoiceNumber().trim());
-        delivery.setInvoiceDate(request.getInvoiceDate());
+        delivery.setInvoiceDate(request.getInvoiceDate().atStartOfDay());
         delivery.setSupplier(supplier);
         delivery.setCreatedOn(now);
         delivery.setCreatedBy(user);
+        delivery.setNote(request.getNote());
 
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
 
+        // Първо проверяваме редовете и изчисляваме сумата преди отстъпката.
         for (CreateDeliveryItemRequest itemRequest : request.getItems()) {
 
             if (itemRequest.getQuantity() == null
@@ -94,46 +97,116 @@ public class DeliveryService {
                 );
             }
 
-            // Намираме или създаваме продукта.
+            BigDecimal itemTotal = purchasePrice.multiply(
+                    BigDecimal.valueOf(itemRequest.getQuantity())
+            );
+
+            totalBeforeDiscount = totalBeforeDiscount.add(itemTotal);
+        }
+
+        totalBeforeDiscount = totalBeforeDiscount.setScale(2, RoundingMode.HALF_UP);
+
+        // Определяме крайната сума и процента отстъпка.
+        BigDecimal discountPercentage = request.getDiscountPercentage() != null
+                ? request.getDiscountPercentage()
+                : BigDecimal.ZERO;
+
+        BigDecimal totalAmount;
+
+        if (request.getTotalAmount() != null) {
+            totalAmount = request.getTotalAmount().setScale(2, RoundingMode.HALF_UP);
+
+            if (totalAmount.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException(
+                        "Крайната сума не може да бъде отрицателна."
+                );
+            }
+
+            if (totalBeforeDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                discountPercentage = totalBeforeDiscount
+                        .subtract(totalAmount)
+                        .multiply(BigDecimal.valueOf(100))
+                        .divide(totalBeforeDiscount, 2, RoundingMode.HALF_UP);
+            } else if (totalAmount.compareTo(BigDecimal.ZERO) != 0) {
+                throw new IllegalArgumentException(
+                        "Крайната сума не може да бъде по-голяма от нула."
+                );
+            }
+
+        } else {
+
+            totalAmount = totalBeforeDiscount
+                    .multiply(
+                            BigDecimal.ONE.subtract(
+                                    discountPercentage.divide(
+                                            BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP
+                                    )
+                            )
+                    )
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
+        delivery.setTotalBeforeDiscount(totalBeforeDiscount);
+        delivery.setDiscountPercentage(discountPercentage);
+        delivery.setTotalAmount(totalAmount);
+
+        // Разпределяме отстъпката между редовете.
+        BigDecimal allocatedTotal = BigDecimal.ZERO;
+
+        for (int i = 0; i < request.getItems().size(); i++) {
+
+            CreateDeliveryItemRequest itemRequest = request.getItems().get(i);
+
+            BigDecimal originalLineTotal = itemRequest.getPurchasePriceAtDelivery()
+                    .multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+
+            BigDecimal discountedLineTotal;
+
+            if (i == request.getItems().size() - 1) {
+                // Последният ред поема разликата от закръгляването.
+                discountedLineTotal = totalAmount.subtract(allocatedTotal);
+            } else if (totalBeforeDiscount.compareTo(BigDecimal.ZERO) > 0) {
+                discountedLineTotal = originalLineTotal
+                        .multiply(totalAmount)
+                        .divide(totalBeforeDiscount, 2, RoundingMode.HALF_UP);
+
+                allocatedTotal = allocatedTotal.add(discountedLineTotal);
+            } else {
+                discountedLineTotal = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
+
+            BigDecimal actualPurchasePrice = discountedLineTotal
+                    .divide(
+                            BigDecimal.valueOf(itemRequest.getQuantity()),
+                            2,
+                            RoundingMode.HALF_UP
+                    );
+
             Product product = productService.findOrCreateFromDelivery(itemRequest);
 
-            // Създаваме реда в доставката.
             DeliveryItem deliveryItem = new DeliveryItem();
-
             deliveryItem.setDelivery(delivery);
             deliveryItem.setProduct(product);
             deliveryItem.setQuantity(itemRequest.getQuantity());
-            deliveryItem.setPurchasePriceAtDelivery(purchasePrice);
+            deliveryItem.setPurchasePriceAtDelivery(actualPurchasePrice);
             deliveryItem.setCreatedOn(now);
 
             delivery.getItems().add(deliveryItem);
 
-            // Увеличаваме наличността.
             productService.adjustQuantity(
                     product.getId(),
                     itemRequest.getQuantity()
             );
 
-            // Актуализираме текущата доставна цена.
             productService.updatePurchasePrice(
                     product.getId(),
-                    purchasePrice
+                    actualPurchasePrice
             );
-
-            // Добавяме стойността на реда към общата сума.
-            BigDecimal itemTotal = purchasePrice.multiply(
-                    BigDecimal.valueOf(itemRequest.getQuantity())
-            );
-
-            totalAmount = totalAmount.add(itemTotal);
         }
-
-        delivery.setTotalAmount(
-                totalAmount.setScale(2, RoundingMode.HALF_UP)
-        );
 
         return deliveryRepository.save(delivery);
     }
+
 
     public Page<Delivery> searchDeliveries(
             String search,
@@ -170,5 +243,13 @@ public class DeliveryService {
         return deliveryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Фактурата не е намерена."));
+    }
+
+    @Transactional
+    public List<Delivery> getDeliveriesBySupplierId(Long supplierId) {
+        return deliveryRepository.findBySupplier_Id(supplierId)
+                .stream()
+                .sorted((a, b) -> b.getInvoiceDate().compareTo(a.getInvoiceDate()))
+                .toList();
     }
 }
