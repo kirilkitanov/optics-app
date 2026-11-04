@@ -9,5 +9,7 @@ public interface StockAdjustmentRepository
         extends JpaRepository<StockAdjustment, Long> {
 
     List<StockAdjustment> findByProductIdOrderByCreatedOnDesc(Long productId);
+
+    boolean existsByProduct_Id(Long productId);
 }
 

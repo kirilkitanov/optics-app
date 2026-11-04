@@ -39,9 +39,7 @@
                      th:text="${errorMessage}">
                 </div>
 
-                <form th:action="${isEdit}
-                        ? @{/products/{id}/edit(id=${product.id})}
-                        : @{/products/new}"
+                <form th:action="${isEdit} ? '/products/' + ${product.id} + '/edit' : '/products/new'"
                       th:object="${product}"
                       method="post"
                       novalidate>
@@ -106,34 +104,11 @@
                             </div>
 
                             <div class="item-field">
-                                <label for="sizeOrDiameter">Размер / диаметър</label>
+                                <label for="sizeOrDiameter">Размер / Ф</label>
                                 <input id="sizeOrDiameter"
                                        type="text"
                                        th:field="*{sizeOrDiameter}"
                                        class="status-select">
-                            </div>
-
-                            <div class="item-field">
-                                <label for="purchasePrice">Доставна цена</label>
-                                <input id="purchasePrice"
-                                       type="number"
-                                       lang="en"
-                                       min="0"
-                                       step="0.01"
-                                       th:field="*{purchasePrice}"
-                                       class="status-select">
-                            </div>
-
-                            <div class="item-field">
-                                <label for="retailPrice">Продажна цена</label>
-                                <input id="retailPrice"
-                                       type="number"
-                                       lang="en"
-                                       min="0"
-                                       step="0.01"
-                                       th:field="*{retailPrice}"
-                                       class="status-select"
-                                       required>
                             </div>
 
                         </div>
@@ -186,18 +161,39 @@
                                     </div>
 
                                 </div>
-
-                                <div class="item-field product-note-field">
-                                    <label for="note">Бележка към продукта</label>
-                                    <textarea id="note"
-                                              th:field="*{note}"
-                                              class="status-select"
-                                              maxlength="500"
-                                              rows="2"
-                                              placeholder="Допълнителна информация..."></textarea>
-                                </div>
-
                             </div>
+                        </div>
+
+                        <div class="item-field">
+                            <label for="purchasePrice">Доставна цена</label>
+                            <input id="purchasePrice"
+                                   type="number"
+                                   lang="en"
+                                   min="0"
+                                   step="0.01"
+                                   th:field="*{purchasePrice}"
+                                   class="status-select">
+                        </div>
+
+                        <div class="item-field">
+                            <label for="retailPrice">Продажна цена</label>
+                            <input id="retailPrice"
+                                   type="number"
+                                   lang="en"
+                                   min="0"
+                                   step="0.01"
+                                   th:field="*{retailPrice}"
+                                   class="status-select"
+                                   required>
+                        </div>
+                        <div class="item-field product-note-field">
+                            <label for="note">Бележка към продукта</label>
+                            <textarea id="note"
+                                      th:field="*{note}"
+                                      class="status-select"
+                                      maxlength="500"
+                                      rows="2"
+                                      placeholder="бележка"></textarea>
                         </div>
 
                     </div>
@@ -225,7 +221,10 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+
+    const isEdit = /*[[${isEdit}]]*/ false;
+
     function toggleOpticalFields() {
         const category = document.getElementById('category');
         const opticalFields = document.getElementById('opticalFields');
@@ -239,19 +238,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+
         const category = document.getElementById('category');
         const brandInput = document.getElementById('brand');
         const modelInput = document.getElementById('model');
         const modelSuggestions = document.getElementById('modelSuggestions');
 
-        const brandModelData = document.querySelectorAll(
-            '#brandModelData span'
-        );
+        const barcodeInput = document.getElementById('barcode');
+        const brandModelData = document.querySelectorAll('#brandModelData span');
 
         function updateModelSuggestions() {
-            const enteredBrand = brandInput.value
-                .trim()
-                .toLocaleLowerCase('bg');
+            const enteredBrand = brandInput.value.trim().toLocaleLowerCase('bg');
 
             modelSuggestions.replaceChildren();
 
@@ -262,10 +259,7 @@
             const models = new Set();
 
             brandModelData.forEach(function (item) {
-                const existingBrand = (item.dataset.brand || '')
-                    .trim()
-                    .toLocaleLowerCase('bg');
-
+                const existingBrand = (item.dataset.brand || '').trim().toLocaleLowerCase('bg');
                 const existingModel = (item.dataset.model || '').trim();
 
                 if (existingBrand.startsWith(enteredBrand) && existingModel) {
@@ -280,13 +274,191 @@
             });
         }
 
+        // Проверка по характеристики – само при създаване
+        if (!isEdit) {
+
+            let lastCheckedCharacteristics = '';
+
+            async function checkProductByCharacteristics() {
+
+                const characteristics = {
+                    category: category.value,
+                    brand: brandInput.value.trim(),
+                    model: modelInput.value.trim(),
+                    sizeOrDiameter: document.getElementById('sizeOrDiameter').value.trim(),
+                    sph: document.getElementById('sph').value || 0,
+                    cyl: document.getElementById('cyl').value || 0,
+                    addPower: document.getElementById('addPower').value || 0,
+                    prism: document.getElementById('prism').value || 0
+                };
+
+                if (!characteristics.category ||
+                    !characteristics.brand ||
+                    !characteristics.model) {
+                    return;
+                }
+
+                const key = JSON.stringify(characteristics);
+
+                if (key === lastCheckedCharacteristics) {
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams(characteristics);
+
+                    const response = await fetch(
+                        `/products/lookup?${params.toString()}`
+                    );
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const products = await response.json();
+
+                    if (products.length === 1) {
+
+                        const product = products[0];
+
+                        barcodeInput.value = product.barcode || '';
+
+                        document.getElementById('purchasePrice').value =
+                            product.purchasePrice ?? '';
+
+                        document.getElementById('retailPrice').value =
+                            product.retailPrice ?? '';
+
+                        showProductLookupMessage(
+                            'Този продукт вече съществува в системата.'
+                        );
+
+                        lastCheckedCharacteristics = key;
+
+                    } else if (products.length > 1) {
+
+                        showProductLookupMessage(
+                            'Намерени са няколко продукта със същите характеристики. Проверете баркодовете им.'
+                        );
+
+                        lastCheckedCharacteristics = key;
+
+                    } else {
+                        lastCheckedCharacteristics = key;
+                    }
+
+                } catch (error) {
+                    console.error(
+                        'Грешка при проверка на характеристиките:',
+                        error
+                    );
+                }
+            }
+
+            function showProductLookupMessage(messageText) {
+
+                let message = document.getElementById('productLookupMessage');
+
+                if (!message) {
+                    message = document.createElement('div');
+                    message.id = 'productLookupMessage';
+                    message.className = 'product-error';
+
+                    document.querySelector('.table-container').prepend(message);
+                }
+
+                message.textContent = messageText;
+            }
+
+            [
+                category,
+                brandInput,
+                modelInput,
+                document.getElementById('sizeOrDiameter'),
+                document.getElementById('sph'),
+                document.getElementById('cyl'),
+                document.getElementById('addPower'),
+                document.getElementById('prism')
+            ].forEach(function (field) {
+                field.addEventListener('change', checkProductByCharacteristics);
+            });
+        }
+
+        // Проверка по баркод – само при създаване на нов продукт
+        if (!isEdit) {
+            let lastLoadedBarcode = '';
+
+            async function checkProductByBarcode() {
+                const barcode = barcodeInput.value.trim();
+
+                if (!barcode || barcode === lastLoadedBarcode) {
+                    return;
+                }
+
+                lastLoadedBarcode = '';
+
+                try {
+                    const response = await fetch(
+                        `/products/lookup-by-barcode?barcode=${encodeURIComponent(barcode)}`
+                    );
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const product = await response.json();
+
+                    category.value = product.category;
+                    brandInput.value = product.brand || '';
+                    modelInput.value = product.model || '';
+
+                    document.getElementById('sizeOrDiameter').value = product.sizeOrDiameter || '';
+                    document.getElementById('sph').value = product.sph ?? 0;
+                    document.getElementById('cyl').value = product.cyl ?? 0;
+                    document.getElementById('addPower').value = product.addPower ?? 0;
+                    document.getElementById('prism').value = product.prism ?? 0;
+
+                    document.getElementById('purchasePrice').value = product.purchasePrice ?? '';
+                    document.getElementById('retailPrice').value = product.retailPrice ?? '';
+
+                    toggleOpticalFields();
+                    updateModelSuggestions();
+
+                    lastLoadedBarcode = barcode;
+
+                    let message = document.getElementById('productLookupMessage');
+
+                    if (!message) {
+                        message = document.createElement('div');
+                        message.id = 'productLookupMessage';
+                        message.className = 'product-error';
+                        document.querySelector('.table-container').prepend(message);
+                    }
+
+                    message.textContent = 'Този продукт вече съществува в системата.';
+
+                } catch (error) {
+                    console.error('Грешка при проверка на баркод:', error);
+                }
+            }
+
+            barcodeInput.addEventListener('change', checkProductByBarcode);
+
+            barcodeInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    checkProductByBarcode();
+                }
+            });
+        }
+
         category.addEventListener('change', toggleOpticalFields);
         brandInput.addEventListener('input', updateModelSuggestions);
 
         toggleOpticalFields();
         updateModelSuggestions();
     });
-</script>
 
+</script>
 </body>
 </html>

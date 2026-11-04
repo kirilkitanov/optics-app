@@ -64,7 +64,7 @@
                         <th>Обща сума</th>
                         <th>Платено</th>
                         <th>Оставащо</th>
-                        <th>Действие</th>
+                        <th>Преглед</th>
                     </tr>
                     </thead>
 
@@ -98,10 +98,7 @@
                         </td>
 
                         <td>
-                            <a th:href="@{/deliveries/{id}(id=${delivery.id})}"
-                               class="btn-table-action">
-                                Отвори
-                            </a>
+                            <a th:href="@{/deliveries/{id}/edit(id=${delivery.id})}" class="btn-table-action">Отвори</a>
                         </td>
 
                     </tr>

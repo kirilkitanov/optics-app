@@ -178,33 +178,12 @@
                                         </div>
 
                                         <div class="item-field">
-                                            <label>Диаметър / Размер</label>
+                                            <label>Размер / Ф</label>
                                             <input type="text"
                                                    th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
                                                    th:value="${item.sizeOrDiameter}"
                                                    class="status-select"
                                                    onchange="checkProductByCharacteristics(this)">
-                                        </div>
-
-                                        <div class="item-field">
-                                            <label>Количество</label>
-                                            <input type="number"
-                                                   min="1"
-                                                   th:name="'items[' + ${itemStat.index} + '].quantity'"
-                                                   th:value="${item.quantity}"
-                                                   class="status-select">
-                                        </div>
-
-                                        <div class="item-field">
-                                            <label>Цена</label>
-                                            <input type="number"
-                                                   lang="en"
-                                                   min="0"
-                                                   step="0.01"
-                                                   th:name="'items[' + ${itemStat.index} + '].salePriceAtSale'"
-                                                   th:value="${item.salePriceAtSale}"
-                                                   class="status-select"
-                                                   required>
                                         </div>
 
                                     </div>
@@ -294,16 +273,37 @@
                                                        class="status-select">
                                             </div>
 
-                                            <div class="item-actions">
-                                                <button type="button"
-                                                        onclick="removeRow(this)"
-                                                        class="btn-remove-row">
-                                                    Премахни
-                                                </button>
-                                            </div>
-
                                         </div>
 
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>Колич.</label>
+                                        <input type="number"
+                                               min="1"
+                                               th:name="'items[' + ${itemStat.index} + '].quantity'"
+                                               th:value="${item.quantity}"
+                                               class="status-select">
+                                    </div>
+
+                                    <div class="item-field">
+                                        <label>Цена</label>
+                                        <input type="number"
+                                               lang="en"
+                                               min="0"
+                                               step="0.01"
+                                               th:name="'items[' + ${itemStat.index} + '].salePriceAtSale'"
+                                               th:value="${item.salePriceAtSale}"
+                                               class="status-select"
+                                               required>
+                                    </div>
+
+                                    <div class="item-actions">
+                                        <button type="button"
+                                                onclick="removeRow(this)"
+                                                class="btn-remove-row">
+                                            X
+                                        </button>
                                     </div>
 
 

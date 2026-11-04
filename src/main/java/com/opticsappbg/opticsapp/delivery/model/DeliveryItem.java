@@ -21,11 +21,11 @@ public class DeliveryItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "delivery_id", nullable = false)
-    private Delivery delivery; // Към коя доставка/фактура принадлежи редът
+    private Delivery delivery;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    private Product product; // Кой продукт от склада се заприходява/връща
+    private Product product;
 
     @Column(nullable = false)
     private Integer quantity;

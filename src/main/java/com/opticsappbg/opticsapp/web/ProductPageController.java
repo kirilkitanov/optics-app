@@ -195,5 +195,30 @@ public class ProductPageController {
         );
     }
 
+    @PostMapping("/{id}/delete")
+    public String deleteProduct(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            productService.deleteProduct(id);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Продуктът е изтрит успешно."
+            );
+
+            return "redirect:/products";
+
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    ex.getMessage()
+            );
+
+            return "redirect:/products?selectedProductId=" + id;
+        }
+    }
+
 }
 

@@ -17,7 +17,6 @@
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
         <section class="content product-page">
 
-
             <div class="content-header">
                 <h1 class="page-title-blue">Продукти и наличности</h1>
 
@@ -27,6 +26,16 @@
                     <a th:href="@{/products/export}" class="btn-new-order"> Експорт в Excel </a>
                     <a th:href="@{/products/new}" class="btn-new-order">Нов продукт</a>
                 </div>
+            </div>
+
+            <div th:if="${successMessage}"
+                 th:text="${successMessage}"
+                 style="color: #18794e; margin: 10px 0;">
+            </div>
+
+            <div th:if="${errorMessage}"
+                 th:text="${errorMessage}"
+                 style="color: #b42318; margin: 10px 0;">
             </div>
 
             <!-- Обобщение на наличностите -->
@@ -259,6 +268,19 @@
                                     id="adjustStockButton">
                                 Корекция на наличността
                             </button>
+
+                            <form id="deleteProductForm" method="post">
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}">
+
+                                <button type="button"
+                                        class="btn-product-action"
+                                        style="background: #c62828; border-color: #c62828;"
+                                        onclick="openDeleteModal()">
+                                    Изтрий продукта
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </aside>
@@ -305,7 +327,7 @@
                 value="0">
 
         <label for="stockAdjustmentReason">
-            Причина за корекцията (незадължително)
+            Причина за корекцията
         </label>
         <input
                 type="text"
@@ -361,6 +383,8 @@
 
     let selectedProductId = null;
 
+    const deleteProductForm =
+        document.getElementById('deleteProductForm');
 
     function formatPrice(value) {
         if (value === null || value === undefined || value === '') {
@@ -389,6 +413,8 @@
         }
 
         selectedProductId = product.id;
+
+        deleteProductForm.action = '/products/' + productId + '/delete';
 
         noProductSelected.hidden = true;
         selectedProductDetails.hidden = false;
@@ -973,7 +999,47 @@
     if (initialSelectedProductId !== null) {
         showProductDetails(initialSelectedProductId);
     }
+
+    function openDeleteModal() {
+        document.getElementById('deleteProductModal').style.display = 'flex';
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteProductModal').style.display = 'none';
+    }
+
+    function confirmDeleteProduct() {
+        document.getElementById('deleteProductForm').submit();
+    }
 </script>
+
+<div id="deleteProductModal" class="modal" style="display: none;">
+    <div class="modal-content">
+
+        <h3>Изтриване на продукт</h3>
+
+        <p>Сигурни ли сте, че искате да изтриете този продукт?</p>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+
+            <button type="button"
+                    class="btn-product-action"
+                    onclick="confirmDeleteProduct()">
+                Изтрий
+            </button>
+
+            <button type="button"
+                    class="btn-product-action"
+                    style="background: #c62828; border-color: #c62828;"
+                    onclick="closeDeleteModal()">
+                Откажи
+            </button>
+
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
+
+

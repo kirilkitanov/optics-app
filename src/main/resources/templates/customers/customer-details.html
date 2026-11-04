@@ -154,32 +154,32 @@
                                                 title="Редакция на плащането"
                                                 aria-label="Редакция на плащането"
                                                 th:attr="data-payment-id=${payment.id},
-                         data-order-id=${summary.order.id},
-                         data-order-number=${summary.order.orderNumber},
-                         data-order-total=${summary.order.total},
-                         data-paid=${summary.paid},
-                         data-outstanding=${summary.outstanding},
-                         data-amount=${payment.amount},
-                         data-method=${payment.paymentMethod.name()}"
+                                                 data-order-id=${summary.order.id},
+                                                 data-order-number=${summary.order.orderNumber},
+                                                 data-order-total=${summary.order.total},
+                                                 data-paid=${summary.paid},
+                                                 data-outstanding=${summary.outstanding},
+                                                 data-amount=${payment.amount},
+                                                 data-method=${payment.paymentMethod.name()}"
                                                 onclick="openEditPaymentModal(this)">
                                             ✎
                                         </button>
 
                                         <form method="post"
                                               th:action="@{/customers/{customerId}/orders/{orderId}/payments/{paymentId}/delete(
-                  customerId=${customer.id},
-                  orderId=${summary.order.id},
-                  paymentId=${payment.id})}"
-                                              onsubmit="return confirm('Сигурни ли сте, че искате да изтриете плащането?');">
+                                              customerId=${customer.id},
+                                              orderId=${summary.order.id},
+                                              paymentId=${payment.id})}">
 
                                             <input type="hidden"
                                                    th:name="${_csrf.parameterName}"
                                                    th:value="${_csrf.token}">
 
-                                            <button type="submit"
+                                            <button type="button"
                                                     class="payment-icon-button payment-delete-button"
                                                     title="Изтрий плащането"
-                                                    aria-label="Изтрий плащането">
+                                                    aria-label="Изтрий плащането"
+                                                    onclick="openDeletePaymentModal(this)">
                                                 ×
                                             </button>
                                         </form>
@@ -283,6 +283,30 @@
     </div>
 </div>
 
+<div id="deletePaymentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Изтриване на плащане</h3>
+
+        <p>Сигурни ли сте, че искате да изтриете това плащане?</p>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+
+            <button type="button"
+                    class="btn-product-action"
+                    onclick="confirmDeletePayment()">
+                Изтрий
+            </button>
+
+            <button type="button"
+                    class="btn-product-action"
+                    style="background: #c62828; border-color: #c62828;"
+                    onclick="closeDeletePaymentModal()">
+                Откажи
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function openPaymentModal(button) {
         const modal = document.getElementById('paymentModal');
@@ -360,12 +384,30 @@
         document.getElementById('paymentAmount').focus();
     }
 
-
     function closePaymentModal() {
         const modal = document.getElementById('paymentModal');
 
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
+    }
+
+    let deletePaymentForm = null;
+
+    function openDeletePaymentModal(button) {
+        deletePaymentForm = button.closest('form');
+
+        document.getElementById('deletePaymentModal').style.display = 'flex';
+    }
+
+    function closeDeletePaymentModal() {
+        document.getElementById('deletePaymentModal').style.display = 'none';
+        deletePaymentForm = null;
+    }
+
+    function confirmDeletePayment() {
+        if (deletePaymentForm) {
+            deletePaymentForm.submit();
+        }
     }
 
     function formatAmount(value) {
@@ -376,6 +418,7 @@
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             closePaymentModal();
+            closeDeletePaymentModal();
         }
     });
 

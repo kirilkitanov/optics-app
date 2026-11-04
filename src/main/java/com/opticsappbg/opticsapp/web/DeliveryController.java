@@ -122,7 +122,7 @@ public class DeliveryController {
                 supplierPaymentService.getRemainingAmount(id)
         );
 
-        return "deliveries/delivery-details";
+        return "deliveries/deliveries-list";
     }
 
     @GetMapping("/new")
@@ -156,7 +156,7 @@ public class DeliveryController {
                     "Доставката е записана успешно."
             );
 
-            return "redirect:/deliveries/" + delivery.getId();
+            return "redirect:/deliveries";
 
         } catch (IllegalArgumentException e) {
 
@@ -166,6 +166,44 @@ public class DeliveryController {
             );
 
             return "redirect:/deliveries/new";
+        }
+    }
+
+    @GetMapping("/{id}/edit")
+    public String editDelivery(@PathVariable Long id, Model model) {
+
+        model.addAttribute("createDeliveryRequest", deliveryService.getDeliveryForEdit(id));
+        model.addAttribute("deliveryId", id);
+
+        model.addAttribute("suppliers", supplierService.getAllSuppliers());
+        model.addAttribute("brands", productService.getUniqueBrandNames());
+        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+
+        return "deliveries/new-delivery";
+    }
+
+    @PostMapping("/{id}/edit")
+    public String updateDelivery(
+            @PathVariable Long id,
+            @ModelAttribute CreateDeliveryRequest request,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            deliveryService.updateDelivery(id, request);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Доставката е редактирана успешно."
+            );
+
+            return "redirect:/deliveries";
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    e.getMessage()
+            );
+
+            return "redirect:/deliveries/" + id + "/edit";
         }
     }
 }

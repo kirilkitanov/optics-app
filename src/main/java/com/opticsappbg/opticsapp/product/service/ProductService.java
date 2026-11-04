@@ -1,11 +1,13 @@
 package com.opticsappbg.opticsapp.product.service;
 
 
+import com.opticsappbg.opticsapp.delivery.repository.DeliveryItemRepository;
 import com.opticsappbg.opticsapp.order.model.Order;
 import com.opticsappbg.opticsapp.order.repository.OrderItemRepository;
 import com.opticsappbg.opticsapp.order.service.OrderPricingService;
 import com.opticsappbg.opticsapp.product.model.Product;
 import com.opticsappbg.opticsapp.product.repository.ProductRepository;
+import com.opticsappbg.opticsapp.product.repository.StockAdjustmentRepository;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderItemRequest;
 import jakarta.transaction.Transactional;
@@ -24,6 +26,8 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderPricingService orderPricingService;
+    private final DeliveryItemRepository deliveryItemRepository;
+    private final StockAdjustmentRepository stockAdjustmentRepository;
 
     @Transactional
     public Product findOrCreate(CreateOrderItemRequest req) {
@@ -333,6 +337,35 @@ public class ProductService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Продуктът не е намерен.")
                 );
+    }
+
+    @Transactional
+    public void deleteProduct(Long productId) {
+
+        Product product = getProductById(productId);
+
+        if (product.getQuantity() == null || product.getQuantity() != 0) {
+            throw new IllegalArgumentException(
+                    "Продуктът не може да бъде изтрит, защото наличността му не е нула."
+            );
+        }
+
+        boolean usedInOrders =
+                orderItemRepository.existsByProduct_Id(productId);
+
+        boolean usedInDeliveries =
+                deliveryItemRepository.existsByProduct_Id(productId);
+
+        boolean usedInAdjustments =
+                stockAdjustmentRepository.existsByProduct_Id(productId);
+
+        if (usedInOrders || usedInDeliveries || usedInAdjustments) {
+            throw new IllegalArgumentException(
+                    "Продуктът не може да бъде изтрит, защото участва в документи."
+            );
+        }
+
+        productRepository.delete(product);
     }
 
     @Transactional

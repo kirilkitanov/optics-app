@@ -8,4 +8,6 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
 
     List<OrderItem> findByProductIdAndPurchasePriceAtSaleIsNull(Long productId);
+
+    boolean existsByProduct_Id(Long productId);
 }

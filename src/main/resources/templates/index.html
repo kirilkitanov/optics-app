@@ -34,7 +34,7 @@
                         <th>Сума</th>
                         <th>Статус</th>
                         <th>Промяна на статус</th>
-                        <th>Действие</th>
+                        <th>Преглед</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -89,9 +89,7 @@
 
                         <td>
                             <a th:href="@{/orders/{id}/edit(id=${order.id})}"
-                               class="btn-table-action"
-                               th:text="${order.status == T(com.opticsappbg.opticsapp.order.model.OrderStatus).CANCELLED ? 'Отвори' : 'Редакция'}">
-                            </a>
+                               class="btn-table-action"> Отвори </a>
                         </td>
                     </tr>
                     </tbody>

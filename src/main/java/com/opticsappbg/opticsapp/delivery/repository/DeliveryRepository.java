@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
 
@@ -32,4 +33,6 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     );
 
     List<Delivery> findBySupplier_Id(Long supplierId);
+
+    Optional<Delivery> findFirstByItems_Product_IdOrderByInvoiceDateDescIdDesc(Long productId);
 }

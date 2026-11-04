@@ -33,7 +33,9 @@
                      hidden>
                 </div>
 
-                <form th:action="@{/deliveries/new}"
+                <form th:action="${deliveryId != null
+                        ? '/deliveries/' + deliveryId + '/edit'
+                        : '/deliveries/new'}"
                       th:object="${createDeliveryRequest}"
                       method="POST"
                       novalidate
@@ -43,7 +45,7 @@
 
                         <div class="form-group">
                             <label class="form-label" for="supplierId">
-                                Доставчик *
+                                Доставчик
                             </label>
 
                             <select id="supplierId"
@@ -62,7 +64,7 @@
 
                         <div class="form-group">
                             <label class="form-label" for="invoiceNumber">
-                                Номер на фактура *
+                                Номер на фактура
                             </label>
 
                             <input type="text"
@@ -76,7 +78,7 @@
 
                         <div class="form-group">
                             <label class="form-label" for="invoiceDate">
-                                Дата на фактура *
+                                Дата на фактура
                             </label>
 
                             <input type="date"
@@ -118,7 +120,7 @@
                                     <label><span class="item-number"></span>Категория</label>
                                     <select th:name="'items[' + ${itemStat.index} + '].category'"
                                             class="status-select category-trigger"
-                                            onchange="toggleFieldsByCategory(this)">
+                                            onchange="toggleFieldsByCategory(this); checkProductByCharacteristics(this)">
                                         <option value="LENS"
                                                 th:selected="${item.category == T(com.opticsappbg.opticsapp.product.model.ProductCategory).LENS}">
                                             Стъкла
@@ -182,33 +184,12 @@
                                 </div>
 
                                 <div class="item-field">
-                                    <label>Диаметър / Размер</label>
+                                    <label>Размер / Ф</label>
                                     <input type="text"
                                            th:name="'items[' + ${itemStat.index} + '].sizeOrDiameter'"
                                            th:value="${item.sizeOrDiameter}"
                                            class="status-select"
                                            onchange="checkProductByCharacteristics(this)">
-                                </div>
-
-                                <div class="item-field">
-                                    <label>Количество</label>
-                                    <input type="number"
-                                           min="1"
-                                           th:name="'items[' + ${itemStat.index} + '].quantity'"
-                                           th:value="${item.quantity != null ? item.quantity : 1}"
-                                           class="status-select">
-                                </div>
-
-                                <div class="item-field">
-                                    <label>Доставна цена</label>
-                                    <input type="number"
-                                           lang="en"
-                                           min="0"
-                                           step="0.01"
-                                           th:name="'items[' + ${itemStat.index} + '].purchasePriceAtDelivery'"
-                                           th:value="${item.purchasePriceAtDelivery}"
-                                           class="status-select purchase-price-input"
-                                           required>
                                 </div>
 
                             </div>
@@ -252,15 +233,36 @@
                                                onchange="checkProductByCharacteristics(this)">
                                     </div>
 
-                                    <div class="item-actions">
-                                        <button type="button"
-                                                onclick="removeRow(this)"
-                                                class="btn-remove-row">
-                                            Премахни
-                                        </button>
-                                    </div>
-
                                 </div>
+                            </div>
+
+                            <div class="item-field">
+                                <label>Колич.</label>
+                                <input type="number"
+                                       min="1"
+                                       th:name="'items[' + ${itemStat.index} + '].quantity'"
+                                       th:value="${item.quantity != null ? item.quantity : 1}"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field">
+                                <label>Доставна цена</label>
+                                <input type="number"
+                                       lang="en"
+                                       min="0"
+                                       step="0.01"
+                                       th:name="'items[' + ${itemStat.index} + '].purchasePriceAtDelivery'"
+                                       th:value="${item.purchasePriceAtDelivery}"
+                                       class="status-select purchase-price-input"
+                                       required>
+                            </div>
+
+                            <div class="item-actions">
+                                <button type="button"
+                                        onclick="removeRow(this)"
+                                        class="btn-remove-row">
+                                    X
+                                </button>
                             </div>
 
                         </div>
@@ -272,6 +274,22 @@
                     </datalist>
 
                     <datalist id="modelSuggestions"></datalist>
+
+                    <div id="productSelectionModal" class="modal" style="display:none;">
+                        <div class="modal-content">
+                            <h3>Избери продукт</h3>
+
+                            <div id="productSelectionList"></div>
+
+                            <div style="margin-top:15px;">
+                                <button type="button"
+                                        class="btn-new-order"
+                                        onclick="closeProductSelectionModal()">
+                                    Отказ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
                     <button type="button" id="addRowBtn" class="btn-new-order">
                         Добави продукт
@@ -310,9 +328,8 @@
                     </div>
 
                     <div class="form-actions">
-                        <button type="submit" class="btn-new-order">Запази доставката</button>
+                        <button type="submit" class="btn-new-order">Запази</button>
                     </div>
-
 
                 </form>
 
@@ -322,7 +339,8 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
+    const brandModelPairs = /*[[${brandModelPairs}]]*/ [];
     function updateItemNumbers() {
         document.querySelectorAll('#prescriptionItems .item-row')
             .forEach((row, index) => {
@@ -399,6 +417,28 @@
     }
 
     function validateBrands() {
+        const supplierId = document.getElementById('supplierId').value;
+        const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+        const invoiceDate = document.getElementById('invoiceDate').value;
+
+        if (!supplierId) {
+            showProductError('Моля, изберете доставчик.');
+            document.getElementById('supplierId').focus();
+            return false;
+        }
+
+        if (!invoiceNumber) {
+            showProductError('Моля, въведете номер на фактура.');
+            document.getElementById('invoiceNumber').focus();
+            return false;
+        }
+
+        if (!invoiceDate) {
+            showProductError('Моля, въведете дата на фактура.');
+            document.getElementById('invoiceDate').focus();
+            return false;
+        }
+
         const rows = document.querySelectorAll('#prescriptionItems .item-row');
 
         for (let i = 0; i < rows.length; i++) {
@@ -524,6 +564,220 @@
         }
     }
 
+    function normalizeOpticalValue(value) {
+        if (value === null || value === undefined || value.trim() === '') {
+            return '0';
+        }
+
+        return value;
+    }
+
+    function getProductCharacteristics(row) {
+        return {
+            category: row.querySelector('.category-trigger')?.value || '',
+            brand: row.querySelector('.brand-input')?.value.trim() || '',
+            model: row.querySelector('.model-input')?.value.trim() || '',
+            sizeOrDiameter:
+                row.querySelector('input[name$=".sizeOrDiameter"]')?.value.trim() || '',
+            sph: normalizeOpticalValue(
+                row.querySelector('input[name$=".sph"]')?.value
+            ),
+            cyl: normalizeOpticalValue(
+                row.querySelector('input[name$=".cyl"]')?.value
+            ),
+            addPower: normalizeOpticalValue(
+                row.querySelector('input[name$=".addPower"]')?.value
+            ),
+            prism: normalizeOpticalValue(
+                row.querySelector('input[name$=".prism"]')?.value
+            )
+        };
+    }
+
+    async function lookupProductsByCharacteristics(row) {
+        const characteristics = getProductCharacteristics(row);
+
+        if (!characteristics.category) {
+            return [];
+        }
+
+        const params = new URLSearchParams();
+
+        params.append('category', characteristics.category);
+        params.append('brand', characteristics.brand);
+        params.append('model', characteristics.model);
+        params.append('sph', characteristics.sph);
+        params.append('cyl', characteristics.cyl);
+        params.append('addPower', characteristics.addPower);
+        params.append('prism', characteristics.prism);
+        params.append('sizeOrDiameter', characteristics.sizeOrDiameter);
+
+        try {
+            const response = await fetch(`/products/lookup?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error(`Lookup error: ${response.status}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('Грешка при търсене на продукт:', error);
+            return [];
+        }
+    }
+
+    async function checkProductByCharacteristics(inputElement) {
+        const row = inputElement.closest('.item-row');
+
+        if (!row) {
+            return;
+        }
+
+        const productIdInput = row.querySelector('.product-id-input');
+        const barcodeInput = row.querySelector('.barcode-input');
+
+        // Запазваме информация дали преди промяната е бил избран продукт.
+        const hadSelectedProduct = productIdInput?.value !== '';
+
+        if (productIdInput) {
+            productIdInput.value = '';
+        }
+
+        const products = await lookupProductsByCharacteristics(row);
+
+        if (!barcodeInput) {
+            return;
+        }
+
+        // Няма намерен продукт — оставяме реда за създаване на нов.
+        if (products.length === 0) {
+            if (hadSelectedProduct) {
+                barcodeInput.value = '';
+
+                const priceInput = row.querySelector('.purchase-price-input');
+                if (priceInput) {
+                    priceInput.value = '';
+                }
+
+                recalcBaseTotal();
+            }
+
+            return;
+        }
+
+        // Намерен е точно един продукт.
+        if (products.length === 1) {
+            selectProductForDelivery(row, products[0]);
+            return;
+        }
+
+        // Намерени са няколко продукта — потребителят избира.
+        openProductSelectionModal(row, products);
+    }
+
+    function selectProductForDelivery(row, product) {
+        const barcodeInput = row.querySelector('.barcode-input');
+        const productIdInput = row.querySelector('.product-id-input');
+        const priceInput = row.querySelector('.purchase-price-input');
+
+        if (barcodeInput) {
+            barcodeInput.value = product.barcode || '';
+        }
+
+        if (productIdInput) {
+            productIdInput.value = product.id;
+        }
+
+        // Зареждаме текущата доставна цена, но тя остава редактируема.
+        if (priceInput && product.purchasePrice != null) {
+            priceInput.value = Number(product.purchasePrice).toFixed(2);
+            recalcBaseTotal();
+        }
+
+        closeProductSelectionModal();
+    }
+
+    function openProductSelectionModal(row, products) {
+        const modal = document.getElementById('productSelectionModal');
+        const list = document.getElementById('productSelectionList');
+
+        if (!modal || !list) {
+            showProductError('Липсва прозорецът за избор на продукт.');
+            return;
+        }
+
+        list.innerHTML = '';
+
+        products.forEach(product => {
+            const button = document.createElement('button');
+
+            button.type = 'button';
+            button.className = 'product-selection-item';
+            button.textContent = `Баркод: ${product.barcode || 'Без баркод'}`;
+
+            button.addEventListener('click', function () {
+                selectProductForDelivery(row, product);
+            });
+
+            list.appendChild(button);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    function closeProductSelectionModal() {
+        const modal = document.getElementById('productSelectionModal');
+
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    function updateModelsForCurrentRow(brandInput) {
+        const currentRow = brandInput.closest('.item-row');
+        const modelInput = currentRow.querySelector('.model-input');
+
+        if (modelInput) {
+            filterModelsForCurrentRow(modelInput);
+        }
+    }
+
+    function filterModelsForCurrentRow(modelInput) {
+        const currentRow = modelInput.closest('.item-row');
+        const brandInput = currentRow.querySelector('.brand-input');
+
+        const selectedBrand = brandInput
+            ? brandInput.value.trim().toLowerCase()
+            : '';
+
+        const modelDatalist = document.getElementById('modelSuggestions');
+
+        modelDatalist.innerHTML = '';
+
+        if (!selectedBrand) {
+            return;
+        }
+
+        const uniqueModels = new Set();
+
+        brandModelPairs.forEach(pair => {
+            const brand = pair[0];
+            const model = pair[1];
+
+            if (brand && brand.toLowerCase() === selectedBrand) {
+                if (model && !uniqueModels.has(model.toLowerCase())) {
+                    uniqueModels.add(model.toLowerCase());
+
+                    const option = document.createElement('option');
+                    option.value = model;
+
+                    modelDatalist.appendChild(option);
+                }
+            }
+        });
+    }
+
     async function autoFillByBarcode(input) {
         const barcode = input.value.trim();
 
@@ -536,8 +790,13 @@
                 `/products/lookup-by-barcode?barcode=${encodeURIComponent(barcode)}`
             );
 
+            if (response.status === 404) {
+                row.querySelector('.product-id-input').value = '';
+                return;
+            }
+
             if (!response.ok) {
-                showProductError('Не е намерен продукт с този баркод.');
+                showProductError('Грешка при търсене на продукта по баркод.');
                 return;
             }
 
