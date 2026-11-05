@@ -19,10 +19,15 @@
 
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
-        <section class="content new-order-page">
+        <section class="content new-order-page delivery-page">
 
             <div class="content-header">
-                <h1 class="page-title-blue">Нова доставка</h1>
+                <h1 class="page-title-blue"
+                    th:text="${deliveryId != null
+        ? 'Редакция на доставка – фактура № ' + createDeliveryRequest.invoiceNumber
+        : 'Нова доставка'}">
+                    Нова доставка
+                </h1>
                 <a th:href="@{/deliveries}" class="btn-new-order">Назад</a>
             </div>
 
@@ -41,7 +46,7 @@
                       novalidate
                       onsubmit="if (!validateBrands()) return false;">
 
-                    <div class="item-fields">
+                    <div class="delivery-supplier-fields">
 
                         <div class="form-group">
                             <label class="form-label" for="supplierId">
@@ -246,7 +251,7 @@
                             </div>
 
                             <div class="item-field">
-                                <label>Доставна цена</label>
+                                <label>Дост. цена</label>
                                 <input type="number"
                                        lang="en"
                                        min="0"

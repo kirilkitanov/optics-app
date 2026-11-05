@@ -87,25 +87,22 @@ public class SupplierPaymentService {
             String note,
             User currentUser) {
 
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Сумата трябва да бъде по-голяма от 0.");
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) >= 0) {
+            throw new IllegalArgumentException(
+                    "Сумата трябва да бъде отрицателна.");
+        }
+
+        if (paymentMethod == null) {
+            throw new IllegalArgumentException("Изберете начин на плащане.");
         }
 
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("Фактурата не е намерена."));
 
-        BigDecimal remaining = getRemainingAmount(deliveryId);
-        BigDecimal overpaid = remaining.negate();
-
-        if (remaining.compareTo(BigDecimal.ZERO) >= 0 || amount.compareTo(overpaid) > 0) {
-            throw new IllegalArgumentException(
-                    "Сумата надвишава сумата, която доставчикът трябва да ни върне.");
-        }
-
         SupplierPayment refund = new SupplierPayment();
         refund.setDelivery(delivery);
         refund.setSupplier(delivery.getSupplier());
-        refund.setAmount(amount.negate());
+        refund.setAmount(amount);
         refund.setPaymentDate(LocalDateTime.now());
         refund.setPaymentMethod(paymentMethod);
         refund.setNote(note);
@@ -114,4 +111,54 @@ public class SupplierPaymentService {
 
         return supplierPaymentRepository.save(refund);
     }
+
+    @Transactional
+    public void editPayment(
+            Long deliveryId,
+            Long paymentId,
+            BigDecimal amount,
+            PaymentMethod paymentMethod,
+            String note) {
+
+        if (amount == null
+                || amount.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Сумата не може да бъде нула.");
+        }
+
+        if (paymentMethod == null) {
+            throw new IllegalArgumentException("Изберете начин на плащане.");
+        }
+
+        SupplierPayment payment = supplierPaymentRepository.findById(paymentId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Плащането не е намерено."));
+
+        if (!payment.getDelivery().getId().equals(deliveryId)) {
+            throw new IllegalArgumentException(
+                    "Плащането не принадлежи на тази фактура.");
+        }
+
+        payment.setAmount(amount);
+        payment.setPaymentMethod(paymentMethod);
+        payment.setNote(note);
+        payment.setUpdatedOn(LocalDateTime.now());
+
+        supplierPaymentRepository.save(payment);
+    }
+
+    @Transactional
+    public void deletePayment(Long deliveryId, Long paymentId) {
+
+        SupplierPayment payment = supplierPaymentRepository.findById(paymentId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Плащането не е намерено."));
+
+        if (!payment.getDelivery().getId().equals(deliveryId)) {
+            throw new IllegalArgumentException(
+                    "Плащането не принадлежи на тази фактура.");
+        }
+
+        supplierPaymentRepository.delete(payment);
+    }
+
 }

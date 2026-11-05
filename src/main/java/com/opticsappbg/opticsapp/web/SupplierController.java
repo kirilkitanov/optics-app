@@ -193,4 +193,50 @@ public class SupplierController {
 
         return "redirect:/suppliers/" + supplierId;
     }
+
+
+    @PostMapping("/{supplierId}/deliveries/{deliveryId}/payments/{paymentId}/edit")
+    public String editPayment(
+            @PathVariable Long supplierId,
+            @PathVariable Long deliveryId,
+            @PathVariable Long paymentId,
+            @RequestParam BigDecimal amount,
+            @RequestParam PaymentMethod paymentMethod,
+            @RequestParam(required = false) String note,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            supplierPaymentService.editPayment(
+                    deliveryId, paymentId, amount, paymentMethod, note);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Плащането е редактирано успешно.");
+
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/suppliers/" + supplierId;
+    }
+
+    @PostMapping("/{supplierId}/deliveries/{deliveryId}/payments/{paymentId}/delete")
+    public String deletePayment(
+            @PathVariable Long supplierId,
+            @PathVariable Long deliveryId,
+            @PathVariable Long paymentId,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            supplierPaymentService.deletePayment(deliveryId, paymentId);
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage", "Плащането е изтрито успешно.");
+
+        } catch (IllegalArgumentException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/suppliers/" + supplierId;
+    }
+
 }

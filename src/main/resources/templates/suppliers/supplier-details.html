@@ -117,7 +117,7 @@
                                 </span>
 
                                 <span th:if="${remainingAmounts[delivery.id] < 0}">
-                                    Върни сума
+                                    Надплатено
                                 </span>
                             </button>
                         </td>
@@ -143,10 +143,48 @@
                                         Въвел:
                                         <span th:text="${payment.createdBy.username}"></span>
                                     </span>
-                                </div>
 
-                                <div th:if="${payment.note != null and !payment.note.isEmpty()}">
-                                    <span th:text="${payment.note}"></span>
+                                    <span th:if="${payment.note != null and !payment.note.isEmpty()}"
+                                          th:text="${payment.note}">
+                                    </span>
+
+                                    <div class="payment-action-buttons">
+                                        <button type="button"
+                                                class="payment-icon-button"
+                                                title="Редакция на плащането"
+                                                aria-label="Редакция на плащането"
+                                                th:attr="data-payment-id=${payment.id},
+                                                         data-delivery-id=${delivery.id},
+                                                         data-invoice-number=${delivery.invoiceNumber},
+                                                         data-delivery-total=${delivery.totalAmount},
+                                                         data-paid=${paidAmounts[delivery.id]},
+                                                         data-outstanding=${remainingAmounts[delivery.id]},
+                                                         data-amount=${payment.amount},
+                                                         data-method=${payment.paymentMethod.name()},
+                                                         data-note=${payment.note}"
+                                                onclick="openEditPaymentModal(this)">
+                                            ✎
+                                        </button>
+
+                                        <form method="post"
+                                              th:action="@{/suppliers/{supplierId}/deliveries/{deliveryId}/payments/{paymentId}/delete(
+                  supplierId=${supplier.id},
+                  deliveryId=${delivery.id},
+                  paymentId=${payment.id})}">
+
+                                            <input type="hidden"
+                                                   th:name="${_csrf.parameterName}"
+                                                   th:value="${_csrf.token}">
+
+                                            <button type="button"
+                                                    class="payment-icon-button payment-delete-button"
+                                                    title="Изтрий плащането"
+                                                    aria-label="Изтрий плащането"
+                                                    onclick="openDeletePaymentModal(this)">
+                                                ×
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -217,7 +255,6 @@
                    type="number"
                    name="amount"
                    class="status-select"
-                   min="0.01"
                    step="0.01"
                    required>
 
@@ -259,6 +296,30 @@
     </div>
 </div>
 
+<div id="deletePaymentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Изтриване на плащане</h3>
+
+        <p>Сигурни ли сте, че искате да изтриете това плащане?</p>
+
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+
+            <button type="button"
+                    class="btn-product-action"
+                    onclick="confirmDeletePayment()">
+                Изтрий
+            </button>
+
+            <button type="button"
+                    class="btn-product-action"
+                    style="background: #c62828; border-color: #c62828;"
+                    onclick="closeDeletePaymentModal()">
+                Откажи
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
     function openPaymentModal(button) {
         const modal = document.getElementById('paymentModal');
@@ -293,7 +354,13 @@
         document.getElementById('paymentSubmitButton').textContent =
             'Запиши';
 
-        document.getElementById('paymentAmount').value = '';
+        const amountInput = document.getElementById('paymentAmount');
+        amountInput.value = '';
+        amountInput.removeAttribute('min');
+
+        if (!refund) {
+            amountInput.min = '0.01';
+        }
         document.getElementById('paymentMethod').value = 'CASH';
         document.getElementById('paymentNote').value = '';
 
@@ -301,6 +368,70 @@
         modal.setAttribute('aria-hidden', 'false');
 
         document.getElementById('paymentAmount').focus();
+    }
+
+    function openEditPaymentModal(button) {
+        const modal = document.getElementById('paymentModal');
+        const form = document.getElementById('paymentForm');
+
+        document.getElementById('paymentSupplierName').textContent =
+            document.querySelector('.customer-details h2').textContent.trim();
+
+        document.getElementById('paymentInvoiceNumber').textContent =
+            button.dataset.invoiceNumber;
+
+        document.getElementById('paymentDeliveryTotal').textContent =
+            formatAmount(button.dataset.deliveryTotal);
+
+        document.getElementById('paymentAlreadyPaid').textContent =
+            formatAmount(button.dataset.paid);
+
+        document.getElementById('paymentOutstanding').textContent =
+            formatAmount(button.dataset.outstanding);
+
+        form.action = '/suppliers/' + form.dataset.supplierId
+            + '/deliveries/' + button.dataset.deliveryId
+            + '/payments/' + button.dataset.paymentId + '/edit';
+
+        document.getElementById('paymentModalTitle').textContent =
+            'Редакция на плащане';
+
+        document.getElementById('paymentSubmitButton').textContent =
+            'Запази промените';
+
+        const amountInput = document.getElementById('paymentAmount');
+        amountInput.value = button.dataset.amount;
+        amountInput.removeAttribute('min');
+
+        document.getElementById('paymentMethod').value =
+            button.dataset.method;
+
+        document.getElementById('paymentNote').value =
+            button.dataset.note || '';
+
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.getElementById('paymentAmount').focus();
+    }
+
+    let deletePaymentForm = null;
+
+    function openDeletePaymentModal(button) {
+        deletePaymentForm = button.closest('form');
+
+        document.getElementById('deletePaymentModal').style.display = 'flex';
+    }
+
+    function closeDeletePaymentModal() {
+        document.getElementById('deletePaymentModal').style.display = 'none';
+        deletePaymentForm = null;
+    }
+
+    function confirmDeletePayment() {
+        if (deletePaymentForm) {
+            deletePaymentForm.submit();
+        }
     }
 
     function closePaymentModal() {
@@ -318,6 +449,7 @@
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             closePaymentModal();
+            closeDeletePaymentModal();
         }
     });
 
