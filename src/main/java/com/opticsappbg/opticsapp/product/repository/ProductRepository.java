@@ -66,4 +66,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<String> findDistinctBrands();
 
     List<Product> findAllByBarcode(String barcode);
+
+    @Query("""
+    SELECT p FROM Product p
+    WHERE p.category = :category
+    AND p.brand = :brand
+    AND p.model = :model
+    AND p.sph = :sph
+    AND p.cyl = :cyl
+    AND p.addPower = :addPower
+    AND p.prism = :prism
+    """)
+    List<Product> findProductsByCharacteristicsWithoutSize(
+            @Param("category") ProductCategory category,
+            @Param("brand") String brand,
+            @Param("model") String model,
+            @Param("sph") BigDecimal sph,
+            @Param("cyl") BigDecimal cyl,
+            @Param("addPower") BigDecimal addPower,
+            @Param("prism") BigDecimal prism
+    );
 }

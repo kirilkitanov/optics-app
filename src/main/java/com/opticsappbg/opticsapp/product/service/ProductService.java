@@ -10,6 +10,7 @@ import com.opticsappbg.opticsapp.product.repository.ProductRepository;
 import com.opticsappbg.opticsapp.product.repository.StockAdjustmentRepository;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderItemRequest;
+import com.opticsappbg.opticsapp.web.dto.DeliveryImportPreviewItem;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -631,6 +632,112 @@ public class ProductService {
         return "Намерени са няколко продукта със същите характеристики. "
                 + "Съществуващите баркодове са: " + barcodes
                 + ". Моля, проверете кой продукт трябва да използвате.";
+    }
+
+    public void matchProductForDeliveryImport(DeliveryImportPreviewItem item) {
+
+        if (item.getErrorMessage() != null
+                && !item.getErrorMessage().isBlank()) {
+            return;
+        }
+
+        String barcode = normalizeImportBarcode(item.getBarcode());
+
+        // 1. Първо търсим по баркод.
+        if (barcode != null) {
+            Optional<Product> barcodeMatch = productRepository.findByBarcode(barcode);
+
+            if (barcodeMatch.isPresent()) {
+                Product product = barcodeMatch.get();
+
+                item.setProductId(product.getId());
+                item.setProductMatchType("FOUND");
+                item.setProductDescription(describeImportProduct(product));
+                return;
+            }
+        }
+
+        // 2. Ако няма баркод съвпадение, търсим по характеристики.
+        List<Product> matches =
+                productRepository.findProductsByCharacteristicsWithoutSize(
+                        item.getCategory(),
+                        item.getBrand().trim(),
+                        item.getModel().trim(),
+                        importValue(item.getSph()),
+                        importValue(item.getCyl()),
+                        importValue(item.getAddPower()),
+                        importValue(item.getPrism())
+                );
+
+        if (matches.size() > 1) {
+            item.setErrorMessage(
+                    "Намерени са няколко продукта със същите характеристики."
+            );
+            return;
+        }
+
+        if (matches.size() == 1) {
+            Product product = matches.get(0);
+
+            // Не презаписваме съществуващ баркод с друг.
+            if (barcode != null
+                    && product.getBarcode() != null
+                    && !barcode.equals(product.getBarcode().trim())) {
+
+                item.setErrorMessage(
+                        "Характеристиките съвпадат с продукт, "
+                                + "който има друг баркод."
+                );
+                return;
+            }
+
+            item.setProductId(product.getId());
+            item.setProductMatchType("FOUND");
+            item.setProductDescription(describeImportProduct(product));
+            return;
+        }
+
+        // 3. Няма намерен продукт – маркираме го като нов.
+        item.setProductMatchType("NEW");
+        item.setNewProductKey(createNewProductKey(item));
+        item.setProductDescription(
+                item.getBrand() + " " + item.getModel()
+        );
+    }
+
+    private String normalizeImportBarcode(String barcode) {
+        if (barcode == null || barcode.isBlank()) {
+            return null;
+        }
+
+        return barcode.trim();
+    }
+
+    private BigDecimal importValue(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String describeImportProduct(Product product) {
+        return product.getCategory().getDisplayName()
+                + " - " + product.getBrand()
+                + " " + product.getModel();
+    }
+
+    private String createNewProductKey(DeliveryImportPreviewItem item) {
+
+        return item.getCategory().name()
+                + "|" + normalizeImportText(item.getBrand())
+                + "|" + normalizeImportText(item.getModel())
+                + "|" + importValue(item.getSph()).stripTrailingZeros().toPlainString()
+                + "|" + importValue(item.getCyl()).stripTrailingZeros().toPlainString()
+                + "|" + importValue(item.getAddPower()).stripTrailingZeros().toPlainString()
+                + "|" + importValue(item.getPrism()).stripTrailingZeros().toPlainString();
+    }
+
+    private String normalizeImportText(String value) {
+        return value == null
+                ? ""
+                : value.trim().toLowerCase(Locale.ROOT);
     }
 
 }

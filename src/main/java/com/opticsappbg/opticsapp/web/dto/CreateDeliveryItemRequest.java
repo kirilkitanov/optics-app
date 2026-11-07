@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class CreateDeliveryItemRequest {
 
     private Long productId;
-
+    private String newProductKey;
     private ProductCategory category;
     private String brand;
     private String model;

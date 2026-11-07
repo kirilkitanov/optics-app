@@ -18,4 +18,5 @@ public class CreateDeliveryRequest {
     private String note;
     private BigDecimal discountPercentage;
     private BigDecimal totalAmount;
+    private boolean updateProductPurchasePrices = true;
 }

@@ -41,6 +41,10 @@ public class Delivery {
     @Column(name = "discount_percentage", nullable = false, precision = 8, scale = 2)
     private BigDecimal discountPercentage;
 
+    @Column(name = "update_product_purchase_prices", nullable = false)
+    @Builder.Default
+    private boolean updateProductPurchasePrices = true;
+
     @Column(nullable = false)
     private LocalDateTime createdOn;
 

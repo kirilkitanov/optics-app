@@ -2,11 +2,13 @@ package com.opticsappbg.opticsapp.web;
 
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.delivery.service.DeliveryService;
+import com.opticsappbg.opticsapp.delivery.service.ExcelDeliveryImportService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.supplier.service.SupplierService;
 import com.opticsappbg.opticsapp.user.service.UserService;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryRequest;
+import com.opticsappbg.opticsapp.web.dto.DeliveryImportPreview;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,9 +17,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
 import com.opticsappbg.opticsapp.supplier.service.SupplierPaymentService;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +38,7 @@ public class DeliveryController {
     private final ProductService productService;
     private final SupplierService supplierService;
     private final UserService userService;
+    private final ExcelDeliveryImportService excelDeliveryImportService;
 
     @GetMapping
     public String showDeliveriesList(
@@ -205,5 +210,53 @@ public class DeliveryController {
 
             return "redirect:/deliveries/" + id + "/edit";
         }
+    }
+
+    @GetMapping("/import")
+    public String showDeliveryImportPage() {
+        return "deliveries/delivery-import";
+    }
+
+    @PostMapping("/import")
+    public String startDeliveryImport(
+            @ModelAttribute("createDeliveryRequest") CreateDeliveryRequest request,
+            Model model) {
+
+        model.addAttribute("createDeliveryRequest", request);
+
+        return "deliveries/delivery-import";
+    }
+
+    @PostMapping("/import/preview")
+    public String previewDeliveryImport(
+            @RequestParam("file") MultipartFile file,
+            @ModelAttribute CreateDeliveryRequest request,
+            Model model) {
+
+        model.addAttribute("createDeliveryRequest", request);
+
+        try {
+            DeliveryImportPreview preview =
+                    excelDeliveryImportService.previewExcel(file);
+
+            model.addAttribute("preview", preview);
+
+        } catch (IllegalArgumentException | IOException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+        }
+
+        return "deliveries/delivery-import";
+    }
+
+    @PostMapping("/import/transfer")
+    public String transferImportedItemsToDelivery(
+            @ModelAttribute("createDeliveryRequest") CreateDeliveryRequest request,
+            Model model) {
+
+        model.addAttribute("suppliers", supplierService.getAllSuppliers());
+        model.addAttribute("brands", productService.getUniqueBrandNames());
+        model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
+
+        return "deliveries/new-delivery";
     }
 }

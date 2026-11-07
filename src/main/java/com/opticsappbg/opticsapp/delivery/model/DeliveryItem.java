@@ -33,6 +33,9 @@ public class DeliveryItem {
     @Column(name = "purchase_price_at_delivery", nullable = false, precision = 12, scale = 2)
     private BigDecimal purchasePriceAtDelivery;
 
+    @Column(name = "original_purchase_price_at_delivery", nullable = false, precision = 12, scale = 2)
+    private BigDecimal originalPurchasePriceAtDelivery;
+
     @Column(nullable = false)
     private LocalDateTime createdOn;
 

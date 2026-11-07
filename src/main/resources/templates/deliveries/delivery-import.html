@@ -1,10 +1,390 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Импорт на доставка от Excel</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Импорт на доставка от Excel</h1>
+
+                <a th:href="@{/deliveries}" class="btn-new-order">
+                    Назад
+                </a>
+            </div>
+
+            <!-- Съобщение за обща грешка -->
+            <div th:if="${errorMessage != null}"
+                 class="product-error"
+                 th:text="${errorMessage}">
+            </div>
+
+            <!-- Качване на Excel файл -->
+            <div class="table-container delivery-import-form-container">
+                <form th:action="@{/deliveries/import/preview}"
+                      method="POST"
+                      enctype="multipart/form-data">
+
+                    <!-- Данни за доставката -->
+                    <input type="hidden" name="supplierId"
+                           th:value="${createDeliveryRequest?.supplierId}">
+                    <input type="hidden" name="invoiceNumber"
+                           th:value="${createDeliveryRequest?.invoiceNumber}">
+                    <input type="hidden" name="invoiceDate"
+                           th:value="${createDeliveryRequest?.invoiceDate}">
+                    <input type="hidden" name="note"
+                           th:value="${createDeliveryRequest?.note}">
+                    <input type="hidden" name="discountPercentage"
+                           th:value="${createDeliveryRequest?.discountPercentage}">
+                    <input type="hidden" name="totalAmount"
+                           th:value="${createDeliveryRequest?.totalAmount}">
+                    <input type="hidden" name="updateProductPurchasePrices"
+                           th:value="${createDeliveryRequest == null
+                    || createDeliveryRequest.updateProductPurchasePrices}">
+
+                    <div class="delivery-import-instruction">
+                        Изберете Excel файл (.xlsx), за да прегледате редовете преди импортиране.
+                    </div>
+
+                    <div class="delivery-import-file-row">
+                        <input type="file"
+                               id="excelFile"
+                               name="file"
+                               accept=".xlsx"
+                               required>
+
+                        <button type="submit" class="btn-new-order">
+                            Преглед на файла
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Резултат от импорта -->
+            <div th:if="${preview != null}">
+
+                <div class="content-header delivery-preview-header">
+                    <h2 class="page-title-blue">
+                        Преглед на импортираните редове
+                    </h2>
+                </div>
+
+                <p class="delivery-preview-filename">
+                    Файл:
+                    <strong th:text="${preview.fileName}"></strong>
+                </p>
+
+                <!-- Общи грешки -->
+                <div th:if="${!preview.errors.isEmpty()}"
+                     class="product-error">
+
+                    <p><strong>Открити са следните проблеми:</strong></p>
+
+                    <ul>
+                        <li th:each="error : ${preview.errors}"
+                            th:text="${error}">
+                        </li>
+                    </ul>
+
+                </div>
+
+                <!-- Няма намерени редове -->
+                <div th:if="${preview.items.isEmpty()}"
+                     class="no-orders-container">
+
+                    Не са намерени редове за импорт във файла.
+
+                </div>
+
+                <!-- Preview таблица -->
+                <div th:if="${!preview.items.isEmpty()}"
+                     class="table-container delivery-preview-container">
+
+                    <table class="delivery-preview-table">
+                        <thead>
+                        <tr>
+                            <th>Ред</th>
+                            <th>Продукт</th>
+                            <th>Баркод</th>
+                            <th>Размер / Диаметър</th>
+                            <th>Оптични параметри</th>
+                            <th>Количество</th>
+                            <th>Покупна цена</th>
+                            <th>Съвпадение</th>
+                            <th>Грешка</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr th:each="item : ${preview.items}"
+                            class="order-row"
+                            th:classappend="${item.errorMessage != null
+            and !item.errorMessage.isBlank()}
+            ? ' delivery-preview-error' : ''">
+
+                            <!-- Excel ред -->
+                            <td th:text="${item.excelRowNumber}"></td>
+
+                            <!-- Продукт -->
+                            <td class="delivery-preview-product">
+                                <strong th:text="${item.category}"></strong>
+                                <br>
+                                <span th:text="${item.brand}"></span>
+                                <br>
+                                <span th:text="${item.model}"></span>
+                                <div class="delivery-preview-product-description"
+                                     th:if="${item.productDescription != null}"
+                                     th:text="${item.productDescription}">
+                                </div>
+                            </td>
+
+                            <!-- Баркод -->
+                            <td th:text="${item.barcode}"></td>
+
+                            <!-- Размер / Диаметър -->
+                            <td th:text="${item.sizeOrDiameter}"></td>
+
+                            <!-- Оптични параметри -->
+                            <td class="delivery-preview-optical">
+                                <div>SPH: <strong th:text="${item.sph}"></strong></div>
+                                <div>CYL: <strong th:text="${item.cyl}"></strong></div>
+                                <div>ADD: <strong th:text="${item.addPower}"></strong></div>
+                                <div>Призма: <strong th:text="${item.prism}"></strong></div>
+                            </td>
+
+                            <!-- Количество -->
+                            <td th:text="${item.quantity}"></td>
+
+                            <!-- Покупна цена -->
+                            <td th:text="${item.purchasePriceAtDelivery}"></td>
+
+                            <!-- Съвпадение -->
+                            <td>
+            <span th:if="${item.productMatchType == 'FOUND'}"
+                  class="delivery-match-found">
+                Съществуващ
+            </span>
+
+                                <span th:if="${item.productMatchType == 'NEW'}"
+                                      class="delivery-match-new">
+                Нов продукт
+            </span>
+                            </td>
+
+                            <!-- Грешка -->
+                            <td class="delivery-preview-error-message"
+                                th:text="${item.errorMessage}">
+                            </td>
+
+                        </tr>
+                        </tbody>
+                    </table>
+
+                </div>
+
+                <!-- Прехвърляне към стандартната форма -->
+                <div th:if="${preview.valid}"
+                     class="delivery-import-transfer-container">
+
+                    <form th:action="@{/deliveries/import/transfer}"
+                          method="POST">
+
+                        <!-- Данни за доставката -->
+                        <input type="hidden"
+                               name="supplierId"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.supplierId : ''}">
+
+                        <input type="hidden"
+                               name="invoiceNumber"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.invoiceNumber : ''}">
+
+                        <input type="hidden"
+                               name="invoiceDate"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.invoiceDate : ''}">
+
+                        <input type="hidden"
+                               name="note"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.note : ''}">
+
+                        <input type="hidden"
+                               name="discountPercentage"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.discountPercentage : 0}">
+
+                        <input type="hidden"
+                               name="totalAmount"
+                               th:value="${createDeliveryRequest != null ? createDeliveryRequest.totalAmount : ''}">
+
+                        <input type="hidden"
+                               name="updateProductPurchasePrices"
+                               th:value="${createDeliveryRequest == null || createDeliveryRequest.updateProductPurchasePrices}">
+
+                        <!-- Импортирани артикули -->
+                        <div th:each="item, iterStat : ${preview.items}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].productId|"
+                                   th:value="${item.productId}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].newProductKey|"
+                                   th:value="${item.newProductKey}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].category|"
+                                   th:value="${item.category}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].brand|"
+                                   th:value="${item.brand}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].model|"
+                                   th:value="${item.model}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].barcode|"
+                                   th:value="${item.barcode}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].sizeOrDiameter|"
+                                   th:value="${item.sizeOrDiameter}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].sph|"
+                                   th:value="${item.sph}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].cyl|"
+                                   th:value="${item.cyl}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].addPower|"
+                                   th:value="${item.addPower}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].prism|"
+                                   th:value="${item.prism}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].quantity|"
+                                   th:value="${item.quantity}">
+
+                            <input type="hidden"
+                                   th:name="|items[${iterStat.index}].purchasePriceAtDelivery|"
+                                   th:value="${item.purchasePriceAtDelivery}">
+
+                        </div>
+
+                        <div class="delivery-import-actions">
+
+                            <button type="submit" class="btn-new-order">
+                                Прехвърли към нова доставка
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+                <!-- Preview с грешки -->
+                <div th:if="${preview.hasErrors()}"
+                     class="product-error delivery-preview-warning">
+
+                    Има редове с грешки. Коригирай Excel файла и го импортирай отново.
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.querySelector('.delivery-preview-table');
+
+        if (!table) {
+            return;
+        }
+
+        let selectedIndex = -1;
+
+        function getVisibleRows() {
+            return Array.from(table.querySelectorAll('tbody tr.order-row'))
+                .filter(row => row.style.display !== 'none');
+        }
+
+        function selectRow(index) {
+            const rows = getVisibleRows();
+
+            if (rows.length === 0) {
+                return;
+            }
+
+            rows.forEach(row => row.classList.remove('order-row-selected'));
+
+            selectedIndex = Math.max(0, Math.min(index, rows.length - 1));
+
+            rows[selectedIndex].classList.add('order-row-selected');
+            rows[selectedIndex].scrollIntoView({
+                block: 'nearest'
+            });
+        }
+
+        table.addEventListener('click', function (event) {
+            if (event.target.closest('a, select, button, input')) {
+                return;
+            }
+
+            const row = event.target.closest('tr.order-row');
+
+            if (!row) {
+                return;
+            }
+
+            const rows = getVisibleRows();
+            selectRow(rows.indexOf(row));
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.target.closest('input, textarea, select, button')) {
+                return;
+            }
+
+            const rows = getVisibleRows();
+
+            if (rows.length === 0) {
+                return;
+            }
+
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                selectRow(selectedIndex < 0 ? 0 : selectedIndex + 1);
+            } else if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                selectRow(selectedIndex < 0 ? 0 : selectedIndex - 1);
+            }
+        });
+    });
+</script>
+
 </body>
 </html>

@@ -18,8 +18,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -75,6 +77,7 @@ public class DeliveryService {
         delivery.setCreatedOn(now);
         delivery.setCreatedBy(user);
         delivery.setNote(request.getNote());
+        delivery.setUpdateProductPurchasePrices(request.isUpdateProductPurchasePrices());
 
         BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
 
@@ -188,6 +191,7 @@ public class DeliveryService {
             deliveryItem.setDelivery(delivery);
             deliveryItem.setProduct(product);
             deliveryItem.setQuantity(itemRequest.getQuantity());
+            deliveryItem.setOriginalPurchasePriceAtDelivery(itemRequest.getPurchasePriceAtDelivery());
             deliveryItem.setPurchasePriceAtDelivery(actualPurchasePrice);
             deliveryItem.setCreatedOn(now);
 
@@ -198,10 +202,12 @@ public class DeliveryService {
                     itemRequest.getQuantity()
             );
 
-            productService.updatePurchasePrice(
-                    product.getId(),
-                    actualPurchasePrice
-            );
+            if (request.isUpdateProductPurchasePrices()) {
+                productService.updatePurchasePrice(
+                        product.getId(),
+                        actualPurchasePrice
+                );
+            }
         }
 
         return deliveryRepository.save(delivery);
@@ -269,6 +275,7 @@ public class DeliveryService {
         request.setNote(delivery.getNote());
         request.setDiscountPercentage(delivery.getDiscountPercentage());
         request.setTotalAmount(delivery.getTotalAmount());
+        request.setUpdateProductPurchasePrices(delivery.isUpdateProductPurchasePrices());
 
         List<CreateDeliveryItemRequest> items = delivery.getItems().stream()
                 .map(deliveryItem -> {
@@ -286,13 +293,8 @@ public class DeliveryService {
                     item.setCyl(product.getCyl());
                     item.setAddPower(product.getAddPower());
                     item.setPrism(product.getPrism());
-
                     item.setQuantity(deliveryItem.getQuantity());
-
-                    // Взимаме историческата цена от фактурата.
-                    item.setPurchasePriceAtDelivery(
-                            deliveryItem.getPurchasePriceAtDelivery()
-                    );
+                    item.setPurchasePriceAtDelivery(deliveryItem.getOriginalPurchasePriceAtDelivery());
 
                     return item;
                 })
@@ -335,14 +337,9 @@ public class DeliveryService {
                         new IllegalArgumentException("Доставчикът не е намерен.")
                 );
 
-        // Запазваме продуктите, чиито количества или цени може да се променят.
-        java.util.Set<Long> affectedProductIds = new java.util.LinkedHashSet<>();
-
         // Връщаме старите количества в склада.
         for (DeliveryItem oldItem : delivery.getItems()) {
             Product product = oldItem.getProduct();
-
-            affectedProductIds.add(product.getId());
 
             productService.adjustQuantity(
                     product.getId(),
@@ -432,6 +429,7 @@ public class DeliveryService {
         delivery.setTotalBeforeDiscount(totalBeforeDiscount);
         delivery.setDiscountPercentage(discountPercentage);
         delivery.setTotalAmount(totalAmount);
+        delivery.setUpdateProductPurchasePrices(request.isUpdateProductPurchasePrices());
         delivery.setUpdatedOn(LocalDateTime.now());
 
         // Премахваме старите редове.
@@ -476,46 +474,28 @@ public class DeliveryService {
 
             Product product = productService.findOrCreateFromDelivery(itemRequest);
 
-            affectedProductIds.add(product.getId());
-
             DeliveryItem deliveryItem = new DeliveryItem();
             deliveryItem.setDelivery(delivery);
             deliveryItem.setProduct(product);
             deliveryItem.setQuantity(itemRequest.getQuantity());
+            deliveryItem.setOriginalPurchasePriceAtDelivery(itemRequest.getPurchasePriceAtDelivery());
             deliveryItem.setPurchasePriceAtDelivery(actualPurchasePrice);
             deliveryItem.setCreatedOn(now);
-
             delivery.getItems().add(deliveryItem);
 
             productService.adjustQuantity(
                     product.getId(),
                     itemRequest.getQuantity()
             );
+
+            if (request.isUpdateProductPurchasePrices()) {
+                productService.updatePurchasePrice(
+                        product.getId(),
+                        actualPurchasePrice
+                );
+            }
         }
 
         deliveryRepository.save(delivery);
-
-        // Обновяваме текущата доставна цена според последната фактура
-        // за всеки засегнат продукт.
-        for (Long productId : affectedProductIds) {
-
-            deliveryRepository
-                    .findFirstByItems_Product_IdOrderByInvoiceDateDescIdDesc(productId)
-                    .ifPresent(latestDelivery -> {
-
-                        DeliveryItem latestItem = latestDelivery.getItems()
-                                .stream()
-                                .filter(item ->
-                                        item.getProduct().getId().equals(productId)
-                                )
-                                .reduce((first, second) -> second)
-                                .orElseThrow();
-
-                        productService.updatePurchasePrice(
-                                productId,
-                                latestItem.getPurchasePriceAtDelivery()
-                        );
-                    });
-        }
     }
 }

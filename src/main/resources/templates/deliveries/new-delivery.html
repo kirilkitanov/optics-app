@@ -38,13 +38,14 @@
                      hidden>
                 </div>
 
-                <form th:action="${deliveryId != null
+                    <form th:action="${deliveryId != null
                         ? '/deliveries/' + deliveryId + '/edit'
                         : '/deliveries/new'}"
-                      th:object="${createDeliveryRequest}"
-                      method="POST"
-                      novalidate
-                      onsubmit="if (!validateBrands()) return false;">
+                          th:object="${createDeliveryRequest}"
+                          method="POST"
+                          enctype="multipart/form-data"
+                          novalidate
+                          onsubmit="return handleDeliveryFormSubmit(event);">
 
                     <div class="delivery-supplier-fields">
 
@@ -109,8 +110,22 @@
                                    th:value="${createDeliveryRequest.note}">
                         </div>
 
-                    </div>
+                        <div class="form-group">
+                            <label class="form-label">&nbsp;</label>
 
+                            <button type="submit"
+                                    name="action"
+                                    value="preview"
+                                    formaction="/deliveries/import"
+                                    formmethod="post"
+                                    formenctype="multipart/form-data"
+                                    formnovalidate
+                                    class="btn-new-order">
+                                Импорт от Excel
+                            </button>
+                        </div>
+
+                    </div>
 
                     <h3 class="section-title">Продукти в доставката</h3>
 
@@ -329,11 +344,20 @@
                                    name="totalAmount"
                                    th:value="${createDeliveryRequest.totalAmount}">
                         </div>
-
                     </div>
 
-                    <div class="form-actions">
+                    <div class="form-actions delivery-form-actions">
+
+                        <div class="financial-group">
+                            <label>
+                                <input type="checkbox"
+                                       th:field="*{updateProductPurchasePrices}">
+                                Обнови текущите доставни цени на продуктите според тази фактура
+                            </label>
+                        </div>
+
                         <button type="submit" class="btn-new-order">Запази</button>
+
                     </div>
 
                 </form>
@@ -419,6 +443,35 @@
 
         reindexRows();
         recalcBaseTotal();
+    }
+
+    function handleDeliveryFormSubmit(event) {
+        const submitter = event.submitter;
+
+        if (submitter && submitter.value === 'preview') {
+            const supplierId = document.getElementById('supplierId').value;
+            const invoiceNumber = document.getElementById('invoiceNumber').value.trim();
+            const invoiceDate = document.getElementById('invoiceDate').value;
+
+            if (!supplierId) {
+                showProductError('Моля, изберете доставчик.');
+                return false;
+            }
+
+            if (!invoiceNumber) {
+                showProductError('Моля, въведете номер на фактура.');
+                return false;
+            }
+
+            if (!invoiceDate) {
+                showProductError('Моля, въведете дата на фактура.');
+                return false;
+            }
+
+            return true;
+        }
+
+        return validateBrands();
     }
 
     function validateBrands() {
