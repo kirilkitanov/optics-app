@@ -2,6 +2,7 @@ package com.opticsappbg.opticsapp.web;
 
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.delivery.service.DeliveryService;
+import com.opticsappbg.opticsapp.delivery.service.ExcelDeliveryExportService;
 import com.opticsappbg.opticsapp.delivery.service.ExcelDeliveryImportService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.supplier.service.SupplierService;
@@ -13,20 +14,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import com.opticsappbg.opticsapp.supplier.service.SupplierPaymentService;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.time.LocalDate;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequestMapping("/deliveries")
@@ -39,6 +45,7 @@ public class DeliveryController {
     private final SupplierService supplierService;
     private final UserService userService;
     private final ExcelDeliveryImportService excelDeliveryImportService;
+    private final ExcelDeliveryExportService excelDeliveryExportService;
 
     @GetMapping
     public String showDeliveriesList(
@@ -187,6 +194,26 @@ public class DeliveryController {
         return "deliveries/new-delivery";
     }
 
+    @GetMapping("/{id}/export")
+    public ResponseEntity<byte[]> exportDelivery(@PathVariable Long id)
+            throws IOException {
+
+        byte[] excel = excelDeliveryExportService.exportDelivery(id);
+
+        String filename = "delivery-" + id + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename*=UTF-8''" +
+                                URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                )
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .body(excel);
+    }
+
     @PostMapping("/{id}/edit")
     public String updateDelivery(
             @PathVariable Long id,
@@ -258,5 +285,38 @@ public class DeliveryController {
         model.addAttribute("brandModelPairs", productService.getBrandModelPairs());
 
         return "deliveries/new-delivery";
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportDeliveries(
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+
+            @RequestParam(required = false) String search)
+            throws IOException {
+
+        List<Delivery> deliveries = deliveryService.searchAllDeliveries(
+                search,
+                startDate,
+                endDate
+        );
+
+        byte[] excel = excelDeliveryExportService.exportDeliveries(deliveries);
+
+        String filename = "deliveries.xlsx";
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename*=UTF-8''" +
+                                URLEncoder.encode(filename, StandardCharsets.UTF_8)
+                )
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                ))
+                .body(excel);
     }
 }

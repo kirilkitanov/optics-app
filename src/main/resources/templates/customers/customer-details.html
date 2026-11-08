@@ -80,6 +80,11 @@
                         )}"></td>
 
                         <td>
+
+                            <span th:if="${summary.order.status.name() == 'CREATED'}"
+                                  th:text="${summary.order.status.displayName}"
+                                  class="status-created"></span>
+
                             <span th:if="${summary.order.status.name() == 'WAITING_LENSES'}"
                                   th:text="${summary.order.status.displayName}"
                                   class="status-waiting-lenses"></span>

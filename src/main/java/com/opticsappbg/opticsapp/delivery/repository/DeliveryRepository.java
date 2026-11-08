@@ -25,6 +25,7 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
         AND (:endDate IS NULL OR d.invoiceDate < :endDate)
         ORDER BY d.invoiceDate DESC
         """)
+
     Page<Delivery> searchDeliveries(
             @Param("search") String search,
             @Param("startDate") LocalDateTime startDate,
@@ -35,4 +36,16 @@ public interface DeliveryRepository extends JpaRepository<Delivery, Long> {
     List<Delivery> findBySupplier_Id(Long supplierId);
 
     Optional<Delivery> findFirstByItems_Product_IdOrderByInvoiceDateDescIdDesc(Long productId);
+
+    @Query("""
+    SELECT d FROM Delivery d
+    JOIN FETCH d.supplier s
+    WHERE (:startDate IS NULL OR d.invoiceDate >= :startDate)
+      AND (:endDate IS NULL OR d.invoiceDate < :endDate)
+    ORDER BY d.invoiceDate DESC
+    """)
+    List<Delivery> findAllForSearch(
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate
+    );
 }

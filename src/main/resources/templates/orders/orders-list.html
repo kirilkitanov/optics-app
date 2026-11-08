@@ -83,7 +83,7 @@
                             </a>
                         </td>
                         <td th:text="${order.customer.phone}"></td>
-                        <td th:text="${#numbers.formatDecimal(order.total, 1, 'COMMA', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(order.total, 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"></td>
                         <td>
                             <span th:text="${order.status.displayName}"
                                   th:classappend="${order.status.name() == 'CANCELLED'} ? ' status-cancelled' :

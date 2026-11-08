@@ -13,6 +13,7 @@ import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,6 +25,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -213,20 +215,49 @@ public class DeliveryService {
         return deliveryRepository.save(delivery);
     }
 
-
+    @Transactional
     public Page<Delivery> searchDeliveries(
             String search,
             LocalDate startDate,
             LocalDate endDate,
             Pageable pageable) {
 
-        if (search != null) {
-            search = search.trim();
+        List<Delivery> filteredDeliveries = searchAllDeliveries(
+                search,
+                startDate,
+                endDate
+        );
 
-            if (search.isEmpty()) {
-                search = null;
-            }
-        }
+        int totalElements = filteredDeliveries.size();
+
+        int start = (int) Math.min(
+                pageable.getOffset(),
+                totalElements
+        );
+
+        int end = Math.min(
+                start + pageable.getPageSize(),
+                totalElements
+        );
+
+        List<Delivery> pageContent = filteredDeliveries.subList(start, end);
+
+        return new PageImpl<>(
+                pageContent,
+                pageable,
+                totalElements
+        );
+    }
+
+    @Transactional
+    public List<Delivery> searchAllDeliveries(
+            String search,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        String normalizedSearch = search == null
+                ? ""
+                : search.trim().toLowerCase(Locale.forLanguageTag("bg"));
 
         LocalDateTime start = startDate != null
                 ? startDate.atStartOfDay()
@@ -236,12 +267,31 @@ public class DeliveryService {
                 ? endDate.plusDays(1).atStartOfDay()
                 : null;
 
-        return deliveryRepository.searchDeliveries(
-                search,
-                start,
-                end,
-                pageable
-        );
+        List<Delivery> deliveries =
+                deliveryRepository.findAllForSearch(start, end);
+
+        if (normalizedSearch.isEmpty()) {
+            return deliveries;
+        }
+
+        return deliveries.stream()
+                .filter(delivery -> {
+
+                    String invoiceNumber = delivery.getInvoiceNumber() == null
+                            ? ""
+                            : delivery.getInvoiceNumber()
+                            .toLowerCase(Locale.forLanguageTag("bg"));
+
+                    String supplierName = delivery.getSupplier() == null
+                            || delivery.getSupplier().getCompanyName() == null
+                            ? ""
+                            : delivery.getSupplier().getCompanyName()
+                            .toLowerCase(Locale.forLanguageTag("bg"));
+
+                    return invoiceNumber.contains(normalizedSearch)
+                            || supplierName.contains(normalizedSearch);
+                })
+                .toList();
     }
 
     @Transactional
@@ -498,4 +548,5 @@ public class DeliveryService {
 
         deliveryRepository.save(delivery);
     }
+
 }

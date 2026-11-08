@@ -81,9 +81,11 @@
 
                         <td th:text="${#numbers.formatDecimal(summary.totalOrders, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
                         <td th:text="${#numbers.formatDecimal(summary.paid, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
-                        <td th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
-                            th:classappend="${summary.outstanding > 0} ? 'status-completed' :
-                    (${summary.outstanding < 0} ? 'status-cancelled' : '')"></td>
+                        <td><span th:text="${#numbers.formatDecimal(summary.outstanding, 1, 'POINT', 2, 'POINT') + ' eur'}"
+                                  th:classappend="${summary.outstanding > 0} ? 'status-completed' :
+                                                 (${summary.outstanding < 0} ? 'status-cancelled' : '')">
+                            </span>
+                        </td>
 
                         <td>
                             <a th:href="@{/customers/{id}(id=${summary.customer.id})}"

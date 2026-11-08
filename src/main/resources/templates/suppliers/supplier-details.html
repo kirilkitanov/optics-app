@@ -91,13 +91,13 @@
 
                         <td th:text="${#temporals.format(delivery.invoiceDate, 'dd.MM.yyyy')}"></td>
 
-                        <td th:text="${#numbers.formatDecimal(delivery.totalAmount, 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(delivery.totalAmount, 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"></td>
 
-                        <td th:text="${#numbers.formatDecimal(paidAmounts[delivery.id], 1, 'POINT', 2, 'POINT') + ' eur'}"></td>
+                        <td th:text="${#numbers.formatDecimal(paidAmounts[delivery.id], 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"></td>
 
-                        <td th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'POINT', 2, 'POINT') + ' eur'}"
-                            th:classappend="${remainingAmounts[delivery.id] > 0} ? 'status-completed' :
-                            (${remainingAmounts[delivery.id] < 0} ? 'status-cancelled' : '')">
+                        <td th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"
+                            th:classappend="${remainingAmounts[delivery.id] > 0} ? 'status-cancelled' :
+                                           (${remainingAmounts[delivery.id] < 0} ? 'status-completed' : '')">
                         </td>
 
                         <td>
@@ -130,7 +130,7 @@
                             <div th:each="payment : ${paymentsByDelivery[delivery.id]}"
                                  style="margin-bottom: 8px;">
 
-                                <strong th:text="${#numbers.formatDecimal(payment.amount, 1, 'POINT', 2, 'POINT')}"></strong>
+                                <strong th:text="${#numbers.formatDecimal(payment.amount, 1, 'WHITESPACE', 2, 'POINT')}"></strong>
                                 <strong> eur</strong>
                                 <span>,</span>
                                 <span th:text="${payment.paymentMethod.displayName + ','}"></span>

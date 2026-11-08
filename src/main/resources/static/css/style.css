@@ -1469,13 +1469,15 @@ body:has(.customer-row) .content-header .order-search-form {
 }
 
 /* Delivery Excel import */
-
 .delivery-import-form-container {
-    padding: 12px 15px;
+    padding: 10px 15px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
 }
 
 .delivery-import-instruction {
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     font-size: 13px;
     color: #555;
 }
@@ -1487,18 +1489,14 @@ body:has(.customer-row) .content-header .order-search-form {
     flex-wrap: wrap;
 }
 
-.delivery-preview-header {
-    margin-top: 15px;
-}
-
 .delivery-preview-filename {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
     color: #666;
     font-size: 13px;
 }
 
 .delivery-preview-container {
-    max-height: 60vh;
+    max-height: calc(100vh - 330px);
     overflow: auto;
 }
 
@@ -1521,15 +1519,15 @@ body:has(.customer-row) .content-header .order-search-form {
     white-space: normal;
 }
 
-.delivery-preview-table th:nth-child(1) { width: 5%; }
-.delivery-preview-table th:nth-child(2) { width: 18%; }
+.delivery-preview-table th:nth-child(1) { width: 4%; }
+.delivery-preview-table th:nth-child(2) { width: 27%; }
 .delivery-preview-table th:nth-child(3) { width: 11%; }
-.delivery-preview-table th:nth-child(4) { width: 9%; }
-.delivery-preview-table th:nth-child(5) { width: 13%; }
-.delivery-preview-table th:nth-child(6) { width: 7%; }
-.delivery-preview-table th:nth-child(7) { width: 9%; }
-.delivery-preview-table th:nth-child(8) { width: 11%; }
-.delivery-preview-table th:nth-child(9) { width: 17%; }
+.delivery-preview-table th:nth-child(4) { width: 7%; }
+.delivery-preview-table th:nth-child(5) { width: 20%; }
+.delivery-preview-table th:nth-child(6) { width: 5%; }
+.delivery-preview-table th:nth-child(7) { width: 6%; }
+.delivery-preview-table th:nth-child(8) { width: 10%; }
+.delivery-preview-table th:nth-child(9) { width: 12%; }
 
 .delivery-preview-product,
 .delivery-preview-optical {
@@ -1541,8 +1539,8 @@ body:has(.customer-row) .content-header .order-search-form {
     font-size: 11px;
 }
 
-.delivery-preview-optical {
-    white-space: nowrap;
+.delivery-preview-product {
+    overflow-wrap: break-word;
 }
 
 .delivery-preview-error-message {
@@ -1564,7 +1562,7 @@ body:has(.customer-row) .content-header .order-search-form {
 }
 
 .delivery-import-transfer-container {
-    margin-bottom: 20px;
+    margin: 5px 0 8px;
 }
 
 .delivery-preview-warning {
@@ -1578,4 +1576,26 @@ body:has(.customer-row) .content-header .order-search-form {
 
 .delivery-preview-table .order-row-selected td {
     background-color: #dbeafe;
+}
+
+/*deliveries-list button adjustment P702*/
+@media (max-width: 1400px) {
+    body:has(.orders-table) .content-header .btn-new-order {
+        font-size: 13px;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    body:has(.orders-table) .date-filter-form input[type="date"] {
+        width: 110px;
+        font-size: 12px;
+    }
+
+    body:has(.orders-table) .order-search-input {
+        width: 150px;
+    }
+
+    body:has(.orders-table) .orders-title-search {
+        gap: 8px;
+    }
 }

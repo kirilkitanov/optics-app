@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -27,10 +26,16 @@
                 </a>
             </div>
 
-            <!-- Съобщение за обща грешка -->
+            <!-- Общи грешки -->
             <div th:if="${errorMessage != null}"
                  class="product-error"
                  th:text="${errorMessage}">
+            </div>
+
+            <!-- Грешки от Excel импорта -->
+            <div th:if="${preview != null and preview.hasErrors()}"
+                 class="product-error delivery-preview-warning">
+                Има редове с грешки. Коригирай Excel файла и го импортирай отново.
             </div>
 
             <!-- Качване на Excel файл -->
@@ -120,36 +125,28 @@
                             <th>Ред</th>
                             <th>Продукт</th>
                             <th>Баркод</th>
-                            <th>Размер / Диаметър</th>
+                            <th>Размер/Ф</th>
                             <th>Оптични параметри</th>
-                            <th>Количество</th>
-                            <th>Покупна цена</th>
+                            <th>Колич.</th>
+                            <th>Цена</th>
                             <th>Съвпадение</th>
                             <th>Грешка</th>
                         </tr>
                         </thead>
 
                         <tbody>
-                        <tr th:each="item : ${preview.items}"
+                        <tr th:each="item, iterStat : ${preview.items}"
                             class="order-row"
                             th:classappend="${item.errorMessage != null
             and !item.errorMessage.isBlank()}
             ? ' delivery-preview-error' : ''">
 
                             <!-- Excel ред -->
-                            <td th:text="${item.excelRowNumber}"></td>
+                            <td th:text="${iterStat.count}"></td>
 
                             <!-- Продукт -->
-                            <td class="delivery-preview-product">
-                                <strong th:text="${item.category}"></strong>
-                                <br>
-                                <span th:text="${item.brand}"></span>
-                                <br>
-                                <span th:text="${item.model}"></span>
-                                <div class="delivery-preview-product-description"
-                                     th:if="${item.productDescription != null}"
-                                     th:text="${item.productDescription}">
-                                </div>
+                            <td class="delivery-preview-product"
+                                th:text="${item.productDescription}">
                             </td>
 
                             <!-- Баркод -->
@@ -160,10 +157,23 @@
 
                             <!-- Оптични параметри -->
                             <td class="delivery-preview-optical">
-                                <div>SPH: <strong th:text="${item.sph}"></strong></div>
-                                <div>CYL: <strong th:text="${item.cyl}"></strong></div>
-                                <div>ADD: <strong th:text="${item.addPower}"></strong></div>
-                                <div>Призма: <strong th:text="${item.prism}"></strong></div>
+
+                                <span th:if="${item.sph != null and item.sph.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+                                    S: <span th:text="${item.sph.stripTrailingZeros().toPlainString()}"></span>
+                                </span>
+
+                                <span th:if="${item.cyl != null and item.cyl.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+                                  / C: <span th:text="${item.cyl.stripTrailingZeros().toPlainString()}"></span>
+                                 </span>
+
+                                <span th:if="${item.addPower != null and item.addPower.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+                                    / ADD: <span th:text="${item.addPower.stripTrailingZeros().toPlainString()}"></span>
+                                </span>
+
+                                <span th:if="${item.prism != null and item.prism.compareTo(T(java.math.BigDecimal).ZERO) != 0}">
+                                    / P: <span th:text="${item.prism.stripTrailingZeros().toPlainString()}"></span>
+                                </span>
+
                             </td>
 
                             <!-- Количество -->
@@ -174,10 +184,10 @@
 
                             <!-- Съвпадение -->
                             <td>
-            <span th:if="${item.productMatchType == 'FOUND'}"
-                  class="delivery-match-found">
-                Съществуващ
-            </span>
+                                <span th:if="${item.productMatchType == 'FOUND'}"
+                                      class="delivery-match-found">
+                                    Съществуващ
+                                </span>
 
                                 <span th:if="${item.productMatchType == 'NEW'}"
                                       class="delivery-match-new">
@@ -298,14 +308,6 @@
                         </div>
 
                     </form>
-
-                </div>
-
-                <!-- Preview с грешки -->
-                <div th:if="${preview.hasErrors()}"
-                     class="product-error delivery-preview-warning">
-
-                    Има редове с грешки. Коригирай Excel файла и го импортирай отново.
 
                 </div>
 

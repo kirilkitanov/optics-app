@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="bg" xmlns:th="http://thymeleaf.org">
 <head>
@@ -28,7 +27,17 @@
         : 'Нова доставка'}">
                     Нова доставка
                 </h1>
-                <a th:href="@{/deliveries}" class="btn-new-order">Назад</a>
+                <div style="display: flex; gap: 10px;">
+                    <a th:if="${deliveryId != null}"
+                       th:href="@{/deliveries/{id}/export(id=${deliveryId})}"
+                       class="btn-new-order">
+                        Експорт Excel
+                    </a>
+
+                    <a th:href="@{/deliveries}" class="btn-new-order">
+                        Назад
+                    </a>
+                </div>
             </div>
 
             <div class="table-container">
