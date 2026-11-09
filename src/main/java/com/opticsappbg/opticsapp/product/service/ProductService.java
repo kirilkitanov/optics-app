@@ -54,10 +54,6 @@ public class ProductService {
                     selectedProduct.getCategory() == req.getCategory()
                             && selectedProduct.getBrand().equals(req.getBrand())
                             && selectedProduct.getModel().equals(req.getModel())
-                            && java.util.Objects.equals(
-                            selectedProduct.getSizeOrDiameter(),
-                            req.getSizeOrDiameter()
-                    )
                             && selectedProduct.getSph().compareTo(req.getSph()) == 0
                             && selectedProduct.getCyl().compareTo(req.getCyl()) == 0
                             && selectedProduct.getAddPower().compareTo(req.getAddPower()) == 0
@@ -111,11 +107,10 @@ public class ProductService {
             }
 
             List<Product> matchingProducts =
-                    productRepository.findProductsByCharacteristics(
+                    productRepository.findProductsByCharacteristicsWithoutSize(
                             req.getCategory(),
                             req.getBrand(),
                             req.getModel(),
-                            req.getSizeOrDiameter(),
                             req.getSph(),
                             req.getCyl(),
                             req.getAddPower(),
@@ -131,11 +126,10 @@ public class ProductService {
         }
 
         List<Product> products =
-                productRepository.findProductsByCharacteristics(
+                productRepository.findProductsByCharacteristicsWithoutSize(
                         req.getCategory(),
                         req.getBrand(),
                         req.getModel(),
-                        req.getSizeOrDiameter(),
                         req.getSph(),
                         req.getCyl(),
                         req.getAddPower(),
@@ -302,11 +296,10 @@ public class ProductService {
 
     public List<Product> findProductsByCharacteristics(CreateOrderItemRequest req) {
 
-        return productRepository.findProductsByCharacteristics(
+        return productRepository.findProductsByCharacteristicsWithoutSize(
                 req.getCategory(),
                 req.getBrand(),
                 req.getModel(),
-                req.getSizeOrDiameter(),
                 req.getSph(),
                 req.getCyl(),
                 req.getAddPower(),

@@ -21,7 +21,7 @@ public class ExcelDeliveryExportService {
     private final DeliveryService deliveryService;
 
     private static final DateTimeFormatter DATE_FORMAT =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+            DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     @Transactional(readOnly = true)
     public byte[] exportDelivery(Long deliveryId) throws IOException {
@@ -66,29 +66,34 @@ public class ExcelDeliveryExportService {
             addInfoRow(sheet, 3, "Фактура №",
                     delivery.getInvoiceNumber(), boldStyle);
 
-            addInfoRow(sheet, 4, "Дата на фактура",
+            addInfoRow(sheet, 4, "Тип документ",
+                    delivery.getDocumentType() != null
+                            ? delivery.getDocumentType().getDisplayName()
+                            : "", boldStyle);
+
+            addInfoRow(sheet, 5, "Дата на фактура",
                     delivery.getInvoiceDate() != null
                             ? delivery.getInvoiceDate().format(DATE_FORMAT)
                             : "", boldStyle);
 
-            addInfoRow(sheet, 5, "Бележка",
+            addInfoRow(sheet, 6, "Бележка",
                     delivery.getNote(), boldStyle);
 
-            addInfoRow(sheet, 6, "Сума преди отстъпка",
+            addInfoRow(sheet, 7, "Сума преди отстъпка",
                     delivery.getTotalBeforeDiscount(), boldStyle, moneyStyle);
 
-            addInfoRow(sheet, 7, "Отстъпка (%)",
+            addInfoRow(sheet, 8, "Отстъпка (%)",
                     delivery.getDiscountPercentage(), boldStyle, moneyStyle);
 
-            addInfoRow(sheet, 8, "Крайна сума",
+            addInfoRow(sheet, 9, "Крайна сума",
                     delivery.getTotalAmount(), boldStyle, moneyStyle);
 
-            addInfoRow(sheet, 9, "Обновяване на доставните цени",
+            addInfoRow(sheet, 10, "Обновяване на доставните цени",
                     delivery.isUpdateProductPurchasePrices() ? "Да" : "Не",
                     boldStyle);
 
             // Заглавия на таблицата
-            int headerRowIndex = 11;
+            int headerRowIndex = 12;
 
             String[] headers = {
                     "№",
@@ -178,11 +183,7 @@ public class ExcelDeliveryExportService {
 
             // Автоматична ширина на колоните
             for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
-                sheet.setColumnWidth(
-                        i,
-                        Math.min(sheet.getColumnWidth(i) + 512, 15000)
-                );
+                sheet.autoSizeColumn(i, false);
             }
 
             workbook.write(outputStream);
@@ -221,6 +222,7 @@ public class ExcelDeliveryExportService {
                     "№",
                     "Доставчик",
                     "Фактура №",
+                    "Тип документ",
                     "Дата на фактура",
                     "Категория",
                     "Баркод",
@@ -259,6 +261,10 @@ public class ExcelDeliveryExportService {
 
                 String invoiceNumber = delivery.getInvoiceNumber();
 
+                String documentType = delivery.getDocumentType() != null
+                        ? delivery.getDocumentType().getDisplayName()
+                        : "";
+
                 String invoiceDate = delivery.getInvoiceDate() != null
                         ? delivery.getInvoiceDate().format(DATE_FORMAT)
                         : "";
@@ -271,7 +277,8 @@ public class ExcelDeliveryExportService {
                     setNumber(row, 0, rowNumber++);
                     setText(row, 1, supplierName);
                     setText(row, 2, invoiceNumber);
-                    setText(row, 3, invoiceDate);
+                    setText(row, 3, documentType);
+                    setText(row, 4, invoiceDate);
 
                     continue;
                 }
@@ -305,6 +312,7 @@ public class ExcelDeliveryExportService {
                     setNumber(row, col++, rowNumber++);
                     setText(row, col++, supplierName);
                     setText(row, col++, invoiceNumber);
+                    setText(row, col++, documentType);
                     setText(row, col++, invoiceDate);
 
                     setText(row, col++, product != null
@@ -357,12 +365,9 @@ public class ExcelDeliveryExportService {
             }
 
             // Автоматична ширина на колоните
+            // Автоматична ширина на колоните
             for (int i = 0; i < headers.length; i++) {
-                sheet.autoSizeColumn(i);
-                sheet.setColumnWidth(
-                        i,
-                        Math.min(sheet.getColumnWidth(i) + 512, 15000)
-                );
+                sheet.autoSizeColumn(i, false);
             }
 
             workbook.write(outputStream);

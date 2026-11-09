@@ -346,6 +346,19 @@ public class OrderService {
                 );
     }
 
+    public List<Order> searchOrders(
+            String search,
+            LocalDate startDate,
+            LocalDate endDate) {
+
+        return searchOrders(
+                search,
+                startDate,
+                endDate,
+                Pageable.unpaged()
+        ).getContent();
+    }
+
     public Page<Order> searchOrders(
             String search,
             LocalDate startDate,
@@ -463,6 +476,10 @@ public class OrderService {
                                 || phone.contains(searchTerm);
                     })
                     .toList();
+
+            if (pageable.isUnpaged()) {
+                return new PageImpl<>(matchingOrders);
+            }
 
             int start = (int) pageable.getOffset();
             int end = Math.min(start + pageable.getPageSize(),

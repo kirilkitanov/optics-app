@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 
 
 @Controller
@@ -223,9 +224,19 @@ public class OrderController {
 
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            LocalDate endDate) throws IOException {
+            LocalDate endDate,
 
-        byte[] excelFile = excelOrderExportService.exportExcel(startDate, endDate);
+            @RequestParam(required = false)
+            String search
+    ) throws IOException {
+
+        List<Order> orders = orderService.searchOrders(
+                search,
+                startDate,
+                endDate
+        );
+
+        byte[] excelFile = excelOrderExportService.exportExcel(orders);
 
         return ResponseEntity.ok()
                 .header(

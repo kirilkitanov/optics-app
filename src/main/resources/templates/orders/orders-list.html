@@ -47,8 +47,12 @@
         <button type="submit" class="btn-new-order">Филтрирай</button>
     </form>
 
-    <a th:href="@{/orders/export(startDate=${startDate},endDate=${endDate})}"
-       class="btn-new-order">Експорт в Excel</a>
+                <a th:href="@{/orders/export(
+                        startDate=${startDate},
+                        endDate=${endDate},
+                        search=${search})}"
+                   class="btn-new-order">Експорт в Excel
+                </a>
 
     <a th:href="@{/orders/new}" class="btn-new-order">Нова поръчка</a>
 

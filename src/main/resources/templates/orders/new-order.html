@@ -855,6 +855,13 @@
 
             barcodeInput.value = product.barcode || '';
 
+            const sizeInput =
+                row.querySelector('input[name$=".sizeOrDiameter"]');
+
+            if (sizeInput) {
+                sizeInput.value = product.sizeOrDiameter || '';
+            }
+
             const productIdInput = row.querySelector('.product-id-input');
 
             if (productIdInput) {
@@ -892,6 +899,13 @@
 
                 const barcodeInput = row.querySelector('.barcode-input');
                 const productIdInput = row.querySelector('.product-id-input');
+
+                const sizeInput =
+                    row.querySelector('input[name$=".sizeOrDiameter"]');
+
+                if (sizeInput) {
+                    sizeInput.value = product.sizeOrDiameter || '';
+                }
 
                 if (barcodeInput) {
                     barcodeInput.value = product.barcode || '';
