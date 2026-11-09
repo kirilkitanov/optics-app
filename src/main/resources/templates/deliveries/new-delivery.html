@@ -78,8 +78,31 @@
                         </div>
 
                         <div class="form-group">
+                            <label class="form-label" for="documentType">
+                                Тип документ
+                            </label>
+
+                            <select id="documentType"
+                                    name="documentType"
+                                    class="status-select"
+                                    required>
+                                <option value="INVOICE"
+                                        th:selected="${createDeliveryRequest.documentType == null
+                    or createDeliveryRequest.documentType.name() == 'INVOICE'}">
+                                    Фактура
+                                </option>
+
+                                <option value="CREDIT_NOTE"
+                                        th:selected="${createDeliveryRequest.documentType != null
+                    and createDeliveryRequest.documentType.name() == 'CREDIT_NOTE'}">
+                                    Кредитно известие
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
                             <label class="form-label" for="invoiceNumber">
-                                Номер на фактура
+                                Номер
                             </label>
 
                             <input type="text"
@@ -93,7 +116,7 @@
 
                         <div class="form-group">
                             <label class="form-label" for="invoiceDate">
-                                Дата на фактура
+                                Дата
                             </label>
 
                             <input type="date"

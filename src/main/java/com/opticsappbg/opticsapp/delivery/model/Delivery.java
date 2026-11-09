@@ -28,6 +28,11 @@ public class Delivery {
     @Column(name = "invoice_date", nullable = false)
     private LocalDateTime invoiceDate;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "document_type", nullable = false)
+    @Builder.Default
+    private DeliveryDocumentType documentType = DeliveryDocumentType.INVOICE;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;

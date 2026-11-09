@@ -1,5 +1,6 @@
 package com.opticsappbg.opticsapp.web.dto;
 
+import com.opticsappbg.opticsapp.delivery.model.DeliveryDocumentType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,7 @@ public class CreateDeliveryRequest {
 
     private String invoiceNumber;
     private LocalDate invoiceDate;
+    private DeliveryDocumentType documentType = DeliveryDocumentType.INVOICE;
     private Long supplierId;
     private List<CreateDeliveryItemRequest> items;
     private String note;

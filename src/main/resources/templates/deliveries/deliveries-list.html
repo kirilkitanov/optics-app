@@ -69,6 +69,7 @@
                     <tr>
                         <th>Дата</th>
                         <th>Фактура №</th>
+                        <th>Тип документ</th>
                         <th>Доставчик</th>
                         <th>Обща сума</th>
                         <th>Платено</th>
@@ -80,22 +81,14 @@
                     <tbody>
 
                     <tr class="order-row" th:each="delivery : ${deliveries}">
-
                         <td th:text="${#temporals.format(delivery.invoiceDate, 'dd.MM.yyyy')}"></td>
-
                         <td th:text="${delivery.invoiceNumber}"></td>
-
-                        <td>
-                            <a th:href="@{/suppliers/{id}(id=${delivery.supplier.id})}"
+                        <td th:text="${delivery.documentType.displayName}"></td>
+                        <td><a th:href="@{/suppliers/{id}(id=${delivery.supplier.id})}"
                                th:text="${delivery.supplier.companyName}"
-                               style="color: inherit; text-decoration: none; cursor: pointer;">
-                            </a>
-                        </td>
-
+                               style="color: inherit; text-decoration: none; cursor: pointer;"></a></td>
                         <td th:text="${#numbers.formatDecimal(delivery.totalAmount, 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"></td>
-
                         <td th:text="${#numbers.formatDecimal(paidAmounts[delivery.id], 1, 'WHITESPACE', 2, 'POINT') + ' eur'}"></td>
-
                         <td>
                             <span th:if="${remainingAmounts[delivery.id].compareTo(T(java.math.BigDecimal).ZERO) > 0}"
                                   th:text="${#numbers.formatDecimal(remainingAmounts[delivery.id], 1, 'WHITESPACE', 2, 'POINT') + ' eur'}">
@@ -124,7 +117,7 @@
                     </tr>
 
                     <tr th:if="${#lists.isEmpty(deliveries)}">
-                        <td colspan="7" class="empty-table-message">
+                        <td colspan="8" class="empty-table-message">
                             Няма намерени доставки.
                         </td>
                     </tr>

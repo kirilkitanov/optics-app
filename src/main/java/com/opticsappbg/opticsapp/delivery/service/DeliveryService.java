@@ -1,6 +1,7 @@
 package com.opticsappbg.opticsapp.delivery.service;
 
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
+import com.opticsappbg.opticsapp.delivery.model.DeliveryDocumentType;
 import com.opticsappbg.opticsapp.delivery.model.DeliveryItem;
 import com.opticsappbg.opticsapp.delivery.repository.DeliveryRepository;
 import com.opticsappbg.opticsapp.product.model.Product;
@@ -75,6 +76,9 @@ public class DeliveryService {
 
         delivery.setInvoiceNumber(request.getInvoiceNumber().trim());
         delivery.setInvoiceDate(request.getInvoiceDate().atStartOfDay());
+        delivery.setDocumentType( request.getDocumentType() != null
+                        ? request.getDocumentType()
+                        : DeliveryDocumentType.INVOICE);
         delivery.setSupplier(supplier);
         delivery.setCreatedOn(now);
         delivery.setCreatedBy(user);
@@ -151,9 +155,13 @@ public class DeliveryService {
                     .setScale(2, RoundingMode.HALF_UP);
         }
 
-        delivery.setTotalBeforeDiscount(totalBeforeDiscount);
+        BigDecimal sign = delivery.getDocumentType() == DeliveryDocumentType.CREDIT_NOTE
+                ? BigDecimal.valueOf(-1)
+                : BigDecimal.ONE;
+
+        delivery.setTotalBeforeDiscount(totalBeforeDiscount.multiply(sign));
         delivery.setDiscountPercentage(discountPercentage);
-        delivery.setTotalAmount(totalAmount);
+        delivery.setTotalAmount(totalAmount.multiply(sign));
 
         // Разпределяме отстъпката между редовете.
         BigDecimal allocatedTotal = BigDecimal.ZERO;
@@ -199,12 +207,15 @@ public class DeliveryService {
 
             delivery.getItems().add(deliveryItem);
 
-            productService.adjustQuantity(
-                    product.getId(),
-                    itemRequest.getQuantity()
-            );
+            int stockChange = delivery.getDocumentType() == DeliveryDocumentType.CREDIT_NOTE
+                    ? -itemRequest.getQuantity()
+                    : itemRequest.getQuantity();
 
-            if (request.isUpdateProductPurchasePrices()) {
+            productService.adjustQuantity(product.getId(), stockChange);
+
+            if (request.isUpdateProductPurchasePrices()
+                    && delivery.getDocumentType() == DeliveryDocumentType.INVOICE) {
+
                 productService.updatePurchasePrice(
                         product.getId(),
                         actualPurchasePrice
@@ -321,10 +332,14 @@ public class DeliveryService {
 
         request.setInvoiceNumber(delivery.getInvoiceNumber());
         request.setInvoiceDate(delivery.getInvoiceDate().toLocalDate());
+        request.setDocumentType(delivery.getDocumentType());
         request.setSupplierId(delivery.getSupplier().getId());
         request.setNote(delivery.getNote());
         request.setDiscountPercentage(delivery.getDiscountPercentage());
-        request.setTotalAmount(delivery.getTotalAmount());
+        request.setTotalAmount(
+                delivery.getTotalAmount() != null
+                        ? delivery.getTotalAmount().abs()
+                        : null);
         request.setUpdateProductPurchasePrices(delivery.isUpdateProductPurchasePrices());
 
         List<CreateDeliveryItemRequest> items = delivery.getItems().stream()
@@ -389,11 +404,14 @@ public class DeliveryService {
 
         // Връщаме старите количества в склада.
         for (DeliveryItem oldItem : delivery.getItems()) {
-            Product product = oldItem.getProduct();
+            int stockChange = getStockChange(
+                    delivery.getDocumentType(),
+                    oldItem.getQuantity()
+            );
 
             productService.adjustQuantity(
-                    product.getId(),
-                    -oldItem.getQuantity()
+                    oldItem.getProduct().getId(),
+                    -stockChange
             );
         }
 
@@ -474,12 +492,19 @@ public class DeliveryService {
         // Обновяваме самата доставка, без да променяме нейното ID.
         delivery.setInvoiceNumber(request.getInvoiceNumber().trim());
         delivery.setInvoiceDate(request.getInvoiceDate().atStartOfDay());
+        delivery.setDocumentType(request.getDocumentType() != null
+                        ? request.getDocumentType()
+                        : DeliveryDocumentType.INVOICE);
         delivery.setSupplier(supplier);
         delivery.setNote(request.getNote());
-        delivery.setTotalBeforeDiscount(totalBeforeDiscount);
+        BigDecimal sign = delivery.getDocumentType() == DeliveryDocumentType.CREDIT_NOTE
+                ? BigDecimal.valueOf(-1)
+                : BigDecimal.ONE;
+        delivery.setTotalBeforeDiscount(totalBeforeDiscount.multiply(sign));
         delivery.setDiscountPercentage(discountPercentage);
-        delivery.setTotalAmount(totalAmount);
-        delivery.setUpdateProductPurchasePrices(request.isUpdateProductPurchasePrices());
+        delivery.setTotalAmount(totalAmount.multiply(sign));
+        delivery.setUpdateProductPurchasePrices(request.isUpdateProductPurchasePrices()
+                        && delivery.getDocumentType() == DeliveryDocumentType.INVOICE);
         delivery.setUpdatedOn(LocalDateTime.now());
 
         // Премахваме старите редове.
@@ -535,10 +560,15 @@ public class DeliveryService {
 
             productService.adjustQuantity(
                     product.getId(),
-                    itemRequest.getQuantity()
+                    getStockChange(
+                            delivery.getDocumentType(),
+                            itemRequest.getQuantity()
+                    )
             );
 
-            if (request.isUpdateProductPurchasePrices()) {
+            if (request.isUpdateProductPurchasePrices()
+                    && delivery.getDocumentType() == DeliveryDocumentType.INVOICE) {
+
                 productService.updatePurchasePrice(
                         product.getId(),
                         actualPurchasePrice
@@ -547,6 +577,12 @@ public class DeliveryService {
         }
 
         deliveryRepository.save(delivery);
+    }
+
+    private int getStockChange(DeliveryDocumentType documentType, int quantity) {
+        return documentType == DeliveryDocumentType.CREDIT_NOTE
+                ? -quantity
+                : quantity;
     }
 
 }

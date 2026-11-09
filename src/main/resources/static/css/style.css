@@ -1437,7 +1437,7 @@ body:has(.customer-row) .content-header .order-search-form {
 
 .delivery-supplier-fields {
     display: grid;
-    grid-template-columns: 200px 150px 140px minmax(200px, 1fr) 140px;
+    grid-template-columns: 200px 160px 140px 140px minmax(200px, 1fr) 140px;
     align-items: end;
 }
 .delivery-supplier-fields .form-group {
