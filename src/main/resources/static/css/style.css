@@ -1599,3 +1599,14 @@ body:has(.customer-row) .content-header .order-search-form {
         gap: 8px;
     }
 }
+
+
+.user-form-page .item-row {
+    display: block;
+}
+
+.user-form-page .item-fields {
+    display: grid;
+    grid-template-columns: 200px 200px 160px 160px;
+    gap: 8px;
+}

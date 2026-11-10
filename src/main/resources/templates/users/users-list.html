@@ -1,10 +1,172 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Потребители</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content new-order-page user-form-page">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Нов потребител</h1>
+                <a th:href="@{/system}" class="btn-new-order">Назад</a>
+            </div>
+
+            <!-- Съобщения -->
+            <div th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+            <!-- Създаване на потребител -->
+            <div class="table-container">
+
+                <form th:action="@{/users/create}" method="post">
+
+                    <div class="item-row">
+                        <div class="item-fields">
+
+                            <div class="item-field">
+                                <label for="username">Потребителско име</label>
+                                <input id="username"
+                                       type="text"
+                                       name="username"
+                                       class="status-select"
+                                       required>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="fullName">Име и фамилия</label>
+                                <input id="fullName"
+                                       type="text"
+                                       name="fullName"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="password">Парола</label>
+                                <input id="password"
+                                       type="password"
+                                       name="password"
+                                       class="status-select"
+                                       required>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="role">Роля</label>
+                                <select id="role"
+                                        name="role"
+                                        class="status-select"
+                                        required>
+                                    <option value="OWNER">Собственик</option>
+                                    <option value="EMPLOYEE">Служител</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order">
+                            Създай потребител
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Потребители</h1>
+            </div>
+
+            <!-- Списък с потребители -->
+            <div class="table-container">
+
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Потребителско име</th>
+                        <th>Име и фамилия</th>
+                        <th>Роля</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="user : ${users}">
+
+                        <td th:text="${user.username}"></td>
+
+                        <td th:text="${user.fullName}"></td>
+
+                        <td>
+                            <span th:text="${user.role.name() == 'ADMIN' ? 'Администратор' :
+                                            (user.role.name() == 'OWNER' ? 'Собственик' : 'Служител')}">
+                            </span>
+                        </td>
+
+                        <td>
+                            <span th:if="${user.active}">Активен</span>
+                            <span th:unless="${user.active}">Неактивен</span>
+                        </td>
+
+                        <td>
+
+                            <a th:href="@{/users/{id}/edit(id=${user.id})}"
+                               class="btn-table-action">
+                                Редакция
+                            </a>
+
+                            <form th:if="${user.active}"
+                                  th:action="@{/users/{id}/deactivate(id=${user.id})}"
+                                  method="post"
+                                  onsubmit="return confirm('Сигурни ли сте, че искате да деактивирате този профил?');">
+
+                                <button type="submit" class="btn-table-action">
+                                    Деактивирай
+                                </button>
+                            </form>
+
+                            <form th:if="${!user.active and currentUser.role.name() == 'ADMIN'}"
+                                  th:action="@{/users/{id}/reactivate(id=${user.id})}"
+                                  method="post">
+
+                                <button type="submit" class="btn-table-action">
+                                    Възстанови
+                                </button>
+                            </form>
+
+                        </td>
+
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(users)}">
+                        <td colspan="5" class="empty-table-message">
+                            Няма намерени потребители.
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
 </body>
 </html>

@@ -5,17 +5,6 @@
         <img th:src="@{/images/logo.png}" alt="Лого" class="sidebar-logo-img" id="sidebarLogoImg">
     </div>
 
-<!--    <nav>-->
-<!--        <a th:href="@{/home}" class="active">Начало</a>-->
-<!--        <a th:href="@{/products}">Продукти</a>-->
-<!--        <a th:href="@{/customers}">Клиенти</a>-->
-<!--        <a th:href="@{/orders}">Поръчки</a>-->
-<!--        <a th:href="@{/deliveries}">Доставки</a>-->
-<!--        <a th:href="@{/reports}">Справки</a>-->
-<!--        <a th:href="@{/system}">Система</a>-->
-<!--    </nav>-->
-
-
     <nav>
         <a th:href="@{/home}"
            th:classappend="${activeSection == 'home'} ? ' active' : ''">

@@ -1,10 +1,142 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редакция на потребител</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content new-order-page user-form-page">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">Редакция на потребител</h1>
+                <a th:href="@{/users}" class="btn-new-order">Назад</a>
+            </div>
+
+            <div th:if="${successMessage}" th:text="${successMessage}"></div>
+            <div th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+            <div class="table-container">
+
+                <form th:action="@{/users/{id}/edit(id=${user.id})}"
+                      method="post">
+
+                    <div class="item-row">
+
+                        <div class="item-fields">
+
+                            <div class="item-field">
+                                <label for="username">Потребителско име</label>
+                                <input id="username"
+                                       type="text"
+                                       name="username"
+                                       th:value="${user.username}"
+                                       class="status-select"
+                                       required>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="fullName">Име и фамилия</label>
+                                <input id="fullName"
+                                       type="text"
+                                       name="fullName"
+                                       th:value="${user.fullName}"
+                                       class="status-select">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="role">Роля</label>
+
+                                <select id="role"
+                                        name="role"
+                                        class="status-select"
+                                        required
+                                        th:if="${user.role != T(com.opticsappbg.opticsapp.user.model.UserRole).ADMIN}">
+
+                                    <option value="OWNER"
+                                            th:selected="${user.role.name() == 'OWNER'}">
+                                        Собственик
+                                    </option>
+
+                                    <option value="EMPLOYEE"
+                                            th:selected="${user.role.name() == 'EMPLOYEE'}">
+                                        Служител
+                                    </option>
+                                </select>
+
+                                <input type="text"
+                                       value="Администратор"
+                                       class="status-select"
+                                       disabled
+                                       th:if="${user.role == T(com.opticsappbg.opticsapp.user.model.UserRole).ADMIN}">
+
+                                <input type="hidden"
+                                       name="role"
+                                       value="ADMIN"
+                                       th:if="${user.role == T(com.opticsappbg.opticsapp.user.model.UserRole).ADMIN}">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order">
+                            Запази промените
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+            <div class="table-container">
+
+                <form th:action="@{/users/{id}/change-password(id=${user.id})}"
+                      method="post">
+
+                    <div class="item-row">
+
+                        <div class="item-fields">
+
+                            <div class="item-field">
+                                <label>Нова парола</label>
+                                <input type="password"
+                                       name="newPassword"
+                                       class="status-select"
+                                       required>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-new-order">
+                            Смени паролата
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </section>
+
+    </div>
+
+</div>
+
 </body>
 </html>
