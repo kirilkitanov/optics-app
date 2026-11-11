@@ -5,6 +5,10 @@ import com.opticsappbg.opticsapp.product.service.ExcelProductImportService;
 import com.opticsappbg.opticsapp.product.service.ProductService;
 import com.opticsappbg.opticsapp.product.service.StockAdjustmentService;
 import com.opticsappbg.opticsapp.security.AuthenticationDetails;
+import com.opticsappbg.opticsapp.user.model.User;
+import com.opticsappbg.opticsapp.user.model.UserRole;
+import com.opticsappbg.opticsapp.user.service.UserService;
+import com.opticsappbg.opticsapp.web.dto.ProductListItemDto;
 import com.opticsappbg.opticsapp.web.dto.StockAdjustmentRequest;
 import com.opticsappbg.opticsapp.web.dto.StockAdjustmentResponse;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -31,13 +36,28 @@ public class ProductPageController {
     private final ExcelProductImportService excelProductImportService;
     private final ExcelProductExportService excelProductExportService;
     private final StockAdjustmentService stockAdjustmentService;
+    private final UserService userService;
 
     @GetMapping
     public String productsPage(
-            @RequestParam(required = false) Long selectedProductId,
-            Model model) {
+            @RequestParam(required = false) Long selectedProductId, Model model,Authentication authentication) {
 
-        model.addAttribute("products", productService.getAllProducts());
+        User currentUser = userService.getCurrentUser(authentication);
+
+        boolean canViewPurchasePrice =
+                currentUser.getRole() == UserRole.ADMIN
+                        || currentUser.getRole() == UserRole.OWNER;
+
+        model.addAttribute(
+                "products",
+                productService.getAllProducts().stream()
+                        .map(product -> ProductListItemDto.from(
+                                product,
+                                canViewPurchasePrice
+                        ))
+                        .toList()
+        );
+
         model.addAttribute("selectedProductId", selectedProductId);
         model.addAttribute("activeSection", "products");
 

@@ -16,73 +16,86 @@
 
         <div th:replace="~{sidebar :: sidebar-fragment}"></div>
 
-        <section class="content">
+        
+<section class="content">
 
-            <div class="content-header">
-                <h1 class="page-title-blue">Система</h1>
-                <a th:href="@{/home}" class="btn-new-order">Назад</a>
-            </div>
+    <div class="content-header">
+        <h1 class="page-title-blue">Система</h1>
+        <a th:href="@{/home}" class="btn-new-order">Назад</a>
+    </div>
 
-            <!-- Архивиране -->
-            <div class="table-container">
-                <h2>Архивиране и възстановяване</h2>
-                <p>
-                    Създаване на резервно копие на базата данни
-                    и възстановяване от съществуващ архив.
-                </p>
-                <p>Функционалността предстои да бъде реализирана.</p>
-            </div>
+    
 
-            <!-- Управление на архивите -->
-            <div class="table-container">
-                <h2>Управление на архивите</h2>
-                <p>
-                    Преглед на архивните файлове в избрана папка,
-                    с информация за дата, час и размер.
-                </p>
-                <p>Функционалността предстои да бъде реализирана.</p>
-            </div>
+<div class="system-tiles">
 
-            <!-- История на действията -->
-            <div class="table-container">
-                <h2>История на действията</h2>
-                <p>
-                    Преглед на последните 500 действия,
-                    извършени в приложението.
-                </p>
-                <p>Функционалността предстои да бъде реализирана.</p>
-            </div>
+    <!-- Архивиране -->
+    <div class="table-container product-detail-note">
+        <div class="product-details-heading">
+            <h2>Архивиране</h2>
+        </div>
+        <p>
+            Създаване на резервни копия, възстановяване
+            от избран архив и управление на архивните файлове.
+        </p>
+        <div class="form-actions">
+            <a th:href="@{/backups}" class="btn-new-order">
+                Управление на архиви
+            </a>
+        </div>
+    </div>
 
-            <!-- Помощ -->
-            <div class="table-container">
-                <h2>Помощ</h2>
-                <p>
-                    Ръководство за работа с приложението
-                    и обяснение на основните функционалности.
-                </p>
-                <p>Ръководството ще бъде добавено допълнително.</p>
-            </div>
+    <!-- Потребители -->
+    <div class="table-container product-detail-note"
+         th:if="${currentUser.role.name() == 'ADMIN'
+                 or currentUser.role.name() == 'OWNER'}">
+        
+        <div class="product-details-heading">
+            <h2>Потребители</h2>
+        </div>
+        <p>
+            Управление на потребителските профили,
+            роли и достъп до приложението.
+        </p>
 
-            <!-- Потребители -->
-            <div class="table-container"
-                 th:if="${currentUser.role.name() == 'ADMIN'
-                         or currentUser.role.name() == 'OWNER'}">
+        <div class="form-actions">
+            <a th:href="@{/users}" class="btn-new-order">
+                Управление на потребители
+            </a>
+        </div>
+    </div>
 
-                <h2>Потребители</h2>
-                <p>
-                    Управление на потребителските профили,
-                    роли и достъп до приложението.
-                </p>
+    <!-- История на действията -->
+    <div class="table-container product-detail-note">        
+        <div class="product-details-heading">
+            <h2>История на действията</h2>
+        </div>
+        <p>
+            Преглед на последните 500 действия,
+            извършени в приложението.
+        </p>
+        <p class="product-details-hint">
+            Функционалността предстои да бъде реализирана.
+        </p>
+    </div>
 
-                <div class="form-actions">
-                    <a th:href="@{/users}" class="btn-new-order">
-                        Управление на потребители
-                    </a>
-                </div>
+    <!-- Помощ -->
+    <div class="table-container product-detail-note">        
+        <div class="product-details-heading">
+            <h2>Помощ</h2>
+        </div>
+        <p>
+            Ръководство за работа с приложението
+            и обяснение на основните функционалности.
+        </p>
+        <p class="product-details-hint">
+            Ръководството ще бъде добавено допълнително.
+        </p>
+    </div>
 
-            </div>
+</div>
 
-        </section>
+</section>
+
 
     </div>
 

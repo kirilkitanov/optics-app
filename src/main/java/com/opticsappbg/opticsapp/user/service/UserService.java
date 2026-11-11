@@ -73,21 +73,23 @@ public class UserService implements UserDetailsService, CommandLineRunner {
     }
 
     // Списък с потребители според правата
-    public List<User> getUsers(Authentication authentication) {
-        User currentUser = getCurrentUser(authentication);
+public List<User> getUsers(Authentication authentication) {
+    User currentUser = getCurrentUser(authentication);
 
-        if (currentUser.getRole() == UserRole.ADMIN) {
-            return userRepository.findAllByOrderByCreatedOnDesc();
-        }
-
-        if (currentUser.getRole() == UserRole.OWNER) {
-            return userRepository.findAllByIsActiveTrueAndRoleInOrderByCreatedOnDesc(
-                    List.of(UserRole.OWNER, UserRole.EMPLOYEE)
-            );
-        }
-
-        throw new SecurityException("Нямате право да управлявате потребители.");
+    if (currentUser.getRole() == UserRole.ADMIN) {
+        return userRepository.findAllByOrderByCreatedOnDesc();
     }
+
+    if (currentUser.getRole() == UserRole.OWNER) {
+        return userRepository.findAllByOrderByCreatedOnDesc()
+                .stream()
+                .filter(user -> user.getRole() == UserRole.OWNER
+                        || user.getRole() == UserRole.EMPLOYEE)
+                .toList();
+    }
+
+    throw new SecurityException("Нямате право да управлявате потребители.");
+}
 
     // Намиране на профил за редакция според правата
     public User getUserForManagement(Long userId,
@@ -269,56 +271,70 @@ public class UserService implements UserDetailsService, CommandLineRunner {
     }
 
     // Деактивиране на профил
-    @Transactional
-    public void deactivateUser(Long userId,
-                               Authentication authentication) {
+@Transactional
+public void deactivateUser(Long userId,
+                           Authentication authentication) {
 
-        User currentUser = getCurrentUser(authentication);
-        User targetUser;
+    User currentUser = getCurrentUser(authentication);
+    User targetUser;
 
-        if (currentUser.getRole() == UserRole.ADMIN) {
-            targetUser = getById(userId);
-        } else if (currentUser.getRole() == UserRole.OWNER) {
-            targetUser = userRepository
-                    .findByIdAndIsActiveTrueAndRoleIn(
-                            userId,
-                            List.of(UserRole.OWNER, UserRole.EMPLOYEE)
-                    )
-                    .orElseThrow(() ->
-                            new SecurityException("Нямате достъп до този профил."));
-        } else {
-            throw new SecurityException("Нямате право да деактивирате профили.");
-        }
-
-        targetUser.setActive(false);
-        targetUser.setUpdatedOn(LocalDateTime.now());
-
-        userRepository.save(targetUser);
+    if (currentUser.getRole() == UserRole.ADMIN) {
+        targetUser = getById(userId);
+    } else if (currentUser.getRole() == UserRole.OWNER) {
+        targetUser = userRepository
+                .findByIdAndIsActiveTrueAndRoleIn(
+                        userId,
+                        List.of(UserRole.OWNER, UserRole.EMPLOYEE)
+                )
+                .orElseThrow(() ->
+                        new SecurityException("Нямате достъп до този профил."));
+    } else {
+        throw new SecurityException("Нямате право да деактивирате профили.");
     }
 
-    // Възстановяване на профил – само Admin
-    @Transactional
-    public void reactivateUser(Long userId,
-                               Authentication authentication) {
+    if (targetUser.getRole() == UserRole.ADMIN) {
+        throw new IllegalArgumentException(
+                "Администраторският профил не може да бъде деактивиран."
+        );
+    }
 
-        User currentUser = getCurrentUser(authentication);
+    targetUser.setActive(false);
+    targetUser.setUpdatedOn(LocalDateTime.now());
 
-        if (currentUser.getRole() != UserRole.ADMIN) {
+    userRepository.save(targetUser);
+}
+
+    // Възстановяване на профил
+@Transactional
+public void reactivateUser(Long userId,
+                           Authentication authentication) {
+
+    User currentUser = getCurrentUser(authentication);
+    User targetUser = getById(userId);
+
+    if (currentUser.getRole() == UserRole.OWNER) {
+
+        if (targetUser.getRole() != UserRole.OWNER
+                && targetUser.getRole() != UserRole.EMPLOYEE) {
             throw new SecurityException(
-                    "Само Admin може да възстановява профили.");
+                    "Нямате право да възстановявате този профил.");
         }
 
-        User targetUser = getById(userId);
+    } else if (currentUser.getRole() != UserRole.ADMIN) {
 
-        if (targetUser.isActive()) {
-            throw new IllegalArgumentException("Профилът вече е активен.");
-        }
-
-        targetUser.setActive(true);
-        targetUser.setUpdatedOn(LocalDateTime.now());
-
-        userRepository.save(targetUser);
+        throw new SecurityException(
+                "Нямате право да възстановявате профили.");
     }
+
+    if (targetUser.isActive()) {
+        throw new IllegalArgumentException("Профилът вече е активен.");
+    }
+
+    targetUser.setActive(true);
+    targetUser.setUpdatedOn(LocalDateTime.now());
+
+    userRepository.save(targetUser);
+}
 
     // Spring Security – зареждане при вход
     @Override

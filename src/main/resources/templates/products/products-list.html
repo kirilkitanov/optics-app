@@ -360,6 +360,7 @@
 
 <script th:inline="javascript">
     const products = /*[[${products}]]*/ [];
+    const canViewPurchasePrice = /*[[${currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'OWNER'}]]*/ false;
     const initialSelectedProductId =
         /*[[${selectedProductId}]]*/ null;
 
@@ -437,7 +438,7 @@
             formatPrice(product.retailPrice);
 
         document.getElementById('detailPurchasePrice').textContent =
-            formatPrice(product.purchasePrice);
+        canViewPurchasePrice ? formatPrice(product.purchasePrice) : '—';
 
         document.getElementById('detailSize').textContent =
             displayValue(product.sizeOrDiameter);

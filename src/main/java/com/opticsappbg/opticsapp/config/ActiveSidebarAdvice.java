@@ -1,12 +1,21 @@
-
 package com.opticsappbg.opticsapp.config;
 
+import com.opticsappbg.opticsapp.security.AuthenticationDetails;
+import com.opticsappbg.opticsapp.user.model.User;
+import com.opticsappbg.opticsapp.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 @ControllerAdvice
 public class ActiveSidebarAdvice {
+
+    private final UserService userService;
+
+    public ActiveSidebarAdvice(UserService userService) {
+        this.userService = userService;
+    }
 
     @ModelAttribute("activeSection")
     public String activeSection(HttpServletRequest request) {
@@ -47,5 +56,17 @@ public class ActiveSidebarAdvice {
         }
 
         return "";
+    }
+
+    @ModelAttribute("currentUser")
+    public User currentUser(Authentication authentication) {
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof AuthenticationDetails)) {
+            return null;
+        }
+
+        return userService.getCurrentUser(authentication);
     }
 }

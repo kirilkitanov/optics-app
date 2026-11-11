@@ -1610,3 +1610,9 @@ body:has(.customer-row) .content-header .order-search-form {
     grid-template-columns: 200px 200px 160px 160px;
     gap: 8px;
 }
+
+.system-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}

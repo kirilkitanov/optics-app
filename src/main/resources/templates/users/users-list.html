@@ -100,7 +100,8 @@
                         <th>Име и фамилия</th>
                         <th>Роля</th>
                         <th>Статус</th>
-                        <th>Действия</th>
+                        <th>Редакция</th>
+                        <th>Управление</th>
                     </tr>
                     </thead>
 
@@ -129,8 +130,10 @@
                                class="btn-table-action">
                                 Редакция
                             </a>
+                        </td>
 
-                            <form th:if="${user.active}"
+                        <td>
+                            <form th:if="${user.active and user.role.name() != 'ADMIN'}"
                                   th:action="@{/users/{id}/deactivate(id=${user.id})}"
                                   method="post"
                                   onsubmit="return confirm('Сигурни ли сте, че искате да деактивирате този профил?');">
@@ -140,7 +143,7 @@
                                 </button>
                             </form>
 
-                            <form th:if="${!user.active and currentUser.role.name() == 'ADMIN'}"
+                            <form th:if="${!user.active and (currentUser.role.name() == 'ADMIN' or currentUser.role.name() == 'OWNER')}"
                                   th:action="@{/users/{id}/reactivate(id=${user.id})}"
                                   method="post">
 
