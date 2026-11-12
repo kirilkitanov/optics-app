@@ -24,12 +24,12 @@
 
             <div th:if="${successMessage}"
                  th:text="${successMessage}"
-                 class="success-message">
+                 class="status-completed">
             </div>
 
             <div th:if="${errorMessage}"
                  th:text="${errorMessage}"
-                 style="color: red; margin-bottom: 12px;">
+                 class="status-cancelled">
             </div>
 
             <div class="customer-details">
@@ -125,8 +125,8 @@
                  data-outstanding=${summary.outstanding},
                  data-cancelled=${summary.order.status.name() == 'CANCELLED'}"
                                     onclick="openPaymentModal(this)">
-                                <span th:if="${summary.order.status.name() != 'CANCELLED'}">Плащане</span>
-                                <span th:if="${summary.order.status.name() == 'CANCELLED'}">Върни сума</span>
+                                <span th:if="${summary.outstanding > 0}">Плащане</span>
+                                <span th:if="${summary.outstanding < 0}">Върни сума</span>
                             </button>
 
                         </td>
@@ -153,7 +153,9 @@
         <span th:text="${payment.createdBy.username}"></span>
     </span>
 
-                                    <div class="payment-action-buttons">
+                                    <div class="payment-action-buttons"
+                                         th:if="${currentUser.role.name() == 'ADMIN'
+                                         or payment.createdBy.id == currentUser.id}">
                                         <button type="button"
                                                 class="payment-icon-button"
                                                 title="Редакция на плащането"
@@ -316,7 +318,7 @@
     function openPaymentModal(button) {
         const modal = document.getElementById('paymentModal');
         const form = document.getElementById('paymentForm');
-        const cancelled = button.dataset.cancelled === 'true';
+        const refund = Number(button.dataset.outstanding) < 0;
 
         document.getElementById('paymentCustomerName').textContent =
             document.querySelector('.customer-details h2').textContent.trim();
@@ -337,7 +339,7 @@
             + '/orders/' + button.dataset.orderId + '/payments';
 
         document.getElementById('paymentModalTitle').textContent =
-            cancelled ? 'Връщане на пари' : 'Добавяне на плащане';
+            refund ? 'Връщане на пари' : 'Добавяне на плащане';
 
         document.getElementById('paymentSubmitButton').textContent = 'Запиши';
 

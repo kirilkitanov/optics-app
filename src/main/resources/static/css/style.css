@@ -1616,3 +1616,33 @@ body:has(.customer-row) .content-header .order-search-form {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 15px;
 }
+
+.backup-settings-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+    padding: 8px 12px;
+}
+
+.backup-directory-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex: 0 0 auto;
+    margin: 0;
+}
+
+.backup-directory-field {
+    width: 400px;
+}
+
+.backup-directory-field input {
+    width: 100%;
+    height: 29px;
+    box-sizing: border-box;
+}
+
+.backup-create-form {
+    margin: 0 0 0 auto;
+}
+

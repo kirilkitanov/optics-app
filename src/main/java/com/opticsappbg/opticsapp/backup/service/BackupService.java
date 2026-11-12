@@ -3,8 +3,6 @@ package com.opticsappbg.opticsapp.backup.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.swing.JFileChooser;
-import javax.swing.SwingUtilities;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -19,7 +17,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 @Service
@@ -115,33 +112,6 @@ public class BackupService {
 
     public synchronized String getBackupDirectory() {
         return backupDirectory.toString();
-    }
-
-    public synchronized String chooseBackupDirectory() throws Exception {
-
-        Files.createDirectories(backupDirectory);
-
-        try {
-            JFileChooser chooser = new JFileChooser(backupDirectory.toFile());
-
-            chooser.setDialogTitle("Избери папка за архивите");
-            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            chooser.setAcceptAllFileFilterUsed(false);
-
-            int result = chooser.showOpenDialog(null);
-
-            if (result != JFileChooser.APPROVE_OPTION) {
-                return null;
-            }
-
-            setBackupDirectory(chooser.getSelectedFile().toPath().toString());
-
-            return getBackupDirectory();
-
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            throw exception;
-        }
     }
 
     public synchronized void createBackup() throws Exception {

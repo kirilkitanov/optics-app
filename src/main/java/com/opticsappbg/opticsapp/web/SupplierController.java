@@ -44,11 +44,15 @@ public class SupplierController {
     @GetMapping("/{id}")
     public String showSupplierDetails(
             @PathVariable Long id,
-            Model model) {
+            Model model,
+            Authentication authentication) {
+
+        User currentUser = userService.getCurrentUser(authentication);
+        model.addAttribute("currentUser", currentUser);
 
         Supplier supplier = supplierService.getSupplierById(id);
 
-        var deliveries = deliveryService.getDeliveriesBySupplierId(id);
+        List<Delivery> deliveries = deliveryService.getDeliveriesBySupplierId(id);
 
         Map<Long, BigDecimal> paidAmounts = new HashMap<>();
         Map<Long, BigDecimal> remainingAmounts = new HashMap<>();
@@ -203,11 +207,20 @@ public class SupplierController {
             @RequestParam BigDecimal amount,
             @RequestParam PaymentMethod paymentMethod,
             @RequestParam(required = false) String note,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         try {
+            User currentUser = userService.getCurrentUser(authentication);
+
             supplierPaymentService.editPayment(
-                    deliveryId, paymentId, amount, paymentMethod, note);
+                    deliveryId,
+                    paymentId,
+                    amount,
+                    paymentMethod,
+                    note,
+                    currentUser
+            );
 
             redirectAttributes.addFlashAttribute(
                     "successMessage", "Плащането е редактирано успешно.");
@@ -224,10 +237,17 @@ public class SupplierController {
             @PathVariable Long supplierId,
             @PathVariable Long deliveryId,
             @PathVariable Long paymentId,
+            Authentication authentication,
             RedirectAttributes redirectAttributes) {
 
         try {
-            supplierPaymentService.deletePayment(deliveryId, paymentId);
+            User currentUser = userService.getCurrentUser(authentication);
+
+            supplierPaymentService.deletePayment(
+                    deliveryId,
+                    paymentId,
+                    currentUser
+            );
 
             redirectAttributes.addFlashAttribute(
                     "successMessage", "Плащането е изтрито успешно.");
@@ -238,5 +258,4 @@ public class SupplierController {
 
         return "redirect:/suppliers/" + supplierId;
     }
-
 }

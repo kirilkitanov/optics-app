@@ -6,6 +6,7 @@ import com.opticsappbg.opticsapp.order.model.Order;
 import com.opticsappbg.opticsapp.order.model.OrderStatus;
 import com.opticsappbg.opticsapp.order.repository.OrderRepository;
 import com.opticsappbg.opticsapp.user.model.User;
+import com.opticsappbg.opticsapp.user.model.UserRole;
 import com.opticsappbg.opticsapp.web.dto.CustomerPaymentRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,11 +49,10 @@ public class CustomerPaymentService {
     public void editPayment(
             Long orderId,
             Long paymentId,
-            CustomerPaymentRequest request) {
+            CustomerPaymentRequest request,
+            User currentUser) {
 
         validateRequest(request);
-
-        Order order = findOrder(orderId);
 
         CustomerPayment payment = customerPaymentRepository.findById(paymentId)
                 .orElseThrow(() ->
@@ -62,6 +62,8 @@ public class CustomerPaymentService {
             throw new IllegalArgumentException(
                     "Плащането не принадлежи на тази поръчка.");
         }
+
+        validatePaymentPermission(payment, currentUser);
 
         payment.setAmount(request.getAmount());
         payment.setPaymentMethod(request.getPaymentMethod());
@@ -70,7 +72,10 @@ public class CustomerPaymentService {
     }
 
     @Transactional
-    public void deletePayment(Long orderId, Long paymentId) {
+    public void deletePayment(
+            Long orderId,
+            Long paymentId,
+            User currentUser) {
 
         CustomerPayment payment = customerPaymentRepository.findById(paymentId)
                 .orElseThrow(() ->
@@ -80,6 +85,8 @@ public class CustomerPaymentService {
             throw new IllegalArgumentException(
                     "Плащането не принадлежи на тази поръчка.");
         }
+
+        validatePaymentPermission(payment, currentUser);
 
         customerPaymentRepository.delete(payment);
     }
@@ -121,5 +128,19 @@ public class CustomerPaymentService {
     public List<CustomerPayment> getPaymentsForOrder(Long orderId) {
         return customerPaymentRepository
                 .findByOrder_IdOrderByPaymentDateDesc(orderId);
+    }
+
+    private void validatePaymentPermission(
+            CustomerPayment payment,
+            User currentUser) {
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (!payment.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException(
+                    "Нямате права да редактирате или изтривате това плащане.");
+        }
     }
 }

@@ -24,12 +24,12 @@
 
             <div th:if="${successMessage}"
                  th:text="${successMessage}"
-                 class="success-message">
+                 class="status-completed">
             </div>
 
             <div th:if="${errorMessage}"
                  th:text="${errorMessage}"
-                 style="color: red; margin-bottom: 12px;">
+                 class="status-cancelled">
             </div>
 
             <div class="customer-details">
@@ -146,7 +146,9 @@
                                           th:text="${payment.note}">
                                     </span>
 
-                                    <div class="payment-action-buttons">
+                                    <div class="payment-action-buttons"
+                                         th:if="${currentUser.role.name() == 'ADMIN'
+                                         or payment.createdBy.id == currentUser.id}">
                                         <button type="button"
                                                 class="payment-icon-button"
                                                 title="Редакция на плащането"

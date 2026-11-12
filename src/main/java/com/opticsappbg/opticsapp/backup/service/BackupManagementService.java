@@ -42,8 +42,4 @@ public class BackupManagementService {
     public String getBackupDirectory() {
         return backupService.getBackupDirectory();
     }
-
-    public String chooseBackupDirectory() throws Exception {
-        return backupService.chooseBackupDirectory();
-    }
 }

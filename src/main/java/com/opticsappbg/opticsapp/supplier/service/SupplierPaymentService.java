@@ -6,6 +6,7 @@ import com.opticsappbg.opticsapp.delivery.repository.DeliveryRepository;
 import com.opticsappbg.opticsapp.supplier.model.SupplierPayment;
 import com.opticsappbg.opticsapp.supplier.repository.SupplierPaymentRepository;
 import com.opticsappbg.opticsapp.user.model.User;
+import com.opticsappbg.opticsapp.user.model.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,13 +36,6 @@ public class SupplierPaymentService {
 
         Delivery delivery = deliveryRepository.findById(deliveryId)
                 .orElseThrow(() -> new IllegalArgumentException("Фактурата не е намерена."));
-
-        List<SupplierPayment> payments =
-                supplierPaymentRepository.findByDelivery_IdOrderByPaymentDateDesc(deliveryId);
-
-        BigDecimal alreadyPaid = payments.stream()
-                .map(SupplierPayment::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         SupplierPayment payment = new SupplierPayment();
         payment.setDelivery(delivery);
@@ -118,7 +112,8 @@ public class SupplierPaymentService {
             Long paymentId,
             BigDecimal amount,
             PaymentMethod paymentMethod,
-            String note) {
+            String note,
+            User currentUser) {
 
         if (amount == null
                 || amount.compareTo(BigDecimal.ZERO) == 0) {
@@ -138,6 +133,8 @@ public class SupplierPaymentService {
                     "Плащането не принадлежи на тази фактура.");
         }
 
+        validatePaymentPermission(payment, currentUser);
+
         payment.setAmount(amount);
         payment.setPaymentMethod(paymentMethod);
         payment.setNote(note);
@@ -147,7 +144,10 @@ public class SupplierPaymentService {
     }
 
     @Transactional
-    public void deletePayment(Long deliveryId, Long paymentId) {
+    public void deletePayment(
+            Long deliveryId,
+            Long paymentId,
+            User currentUser) {
 
         SupplierPayment payment = supplierPaymentRepository.findById(paymentId)
                 .orElseThrow(() ->
@@ -158,7 +158,23 @@ public class SupplierPaymentService {
                     "Плащането не принадлежи на тази фактура.");
         }
 
+        validatePaymentPermission(payment, currentUser);
+
         supplierPaymentRepository.delete(payment);
+    }
+
+    private void validatePaymentPermission(
+            SupplierPayment payment,
+            User currentUser) {
+
+        if (currentUser.getRole() == UserRole.ADMIN) {
+            return;
+        }
+
+        if (!payment.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new IllegalArgumentException(
+                    "Нямате права да редактирате или изтривате това плащане.");
+        }
     }
 
 }
