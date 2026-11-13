@@ -1,5 +1,7 @@
 package com.opticsappbg.opticsapp.customer.service;
 
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import com.opticsappbg.opticsapp.customer.model.CustomerPayment;
 import com.opticsappbg.opticsapp.customer.repository.CustomerPaymentRepository;
 import com.opticsappbg.opticsapp.order.model.Order;
@@ -22,6 +24,7 @@ public class CustomerPaymentService {
 
     private final CustomerPaymentRepository customerPaymentRepository;
     private final OrderRepository orderRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public void addPayment(
@@ -42,7 +45,21 @@ public class CustomerPaymentService {
                 .createdBy(currentUser)
                 .build();
 
-        customerPaymentRepository.save(payment);
+        CustomerPayment savedPayment = customerPaymentRepository.save(payment);
+
+        ActivityAction action = savedPayment.getAmount().compareTo(BigDecimal.ZERO) < 0
+                ? ActivityAction.REFUND
+                : ActivityAction.PAYMENT;
+
+        activityLogService.log(
+                action,
+                "CUSTOMER_PAYMENT",
+                savedPayment.getId(),
+                (action == ActivityAction.REFUND
+                        ? "Върнати пари по поръчка №"
+                        : "Получено плащане по поръчка №")
+                        + order.getOrderNumber()
+        );
     }
 
     @Transactional
@@ -69,6 +86,14 @@ public class CustomerPaymentService {
         payment.setPaymentMethod(request.getPaymentMethod());
 
         customerPaymentRepository.save(payment);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "CUSTOMER_PAYMENT",
+                payment.getId(),
+                "Редактирано плащане по поръчка №"
+                        + payment.getOrder().getOrderNumber()
+        );
     }
 
     @Transactional
@@ -87,6 +112,30 @@ public class CustomerPaymentService {
         }
 
         validatePaymentPermission(payment, currentUser);
+
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "CUSTOMER_PAYMENT",
+                payment.getId(),
+                "Изтрито плащане по поръчка №"
+                        + payment.getOrder().getOrderNumber()
+        );
+
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "CUSTOMER_PAYMENT",
+                payment.getId(),
+                "Изтрито плащане по поръчка №"
+                        + payment.getOrder().getOrderNumber()
+        );
+
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "CUSTOMER_PAYMENT",
+                payment.getId(),
+                "Изтрито плащане по поръчка №"
+                        + payment.getOrder().getOrderNumber()
+        );
 
         customerPaymentRepository.delete(payment);
     }

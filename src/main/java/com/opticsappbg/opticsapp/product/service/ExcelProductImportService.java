@@ -3,6 +3,8 @@ package com.opticsappbg.opticsapp.product.service;
 import com.opticsappbg.opticsapp.product.model.Product;
 import com.opticsappbg.opticsapp.product.model.ProductCategory;
 import com.opticsappbg.opticsapp.product.repository.ProductRepository;
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
@@ -20,6 +22,7 @@ public class ExcelProductImportService {
 
     private final ProductRepository productRepository;
     private final ProductService productService;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public ImportResult importExcel(MultipartFile file) throws IOException {
@@ -217,9 +220,34 @@ public class ExcelProductImportService {
                         product.setCreatedOn(LocalDateTime.now());
                         product.setActive(true);
 
-                        productRepository.save(product);
+                        Product savedProduct = productRepository.save(product);
+
+                        activityLogService.log(
+                                ActivityAction.CREATE,
+                                "PRODUCT",
+                                savedProduct.getId(),
+                                "Създаден продукт чрез Excel импорт: "
+                                        + describeProduct(savedProduct)
+                        );
+
                         added++;
                     } else {
+                        boolean changed = hasProductChanges(
+                                existing,
+                                category,
+                                brand,
+                                model,
+                                barcode,
+                                size,
+                                sph,
+                                cyl,
+                                addPower,
+                                prism,
+                                purchasePrice,
+                                retailPrice,
+                                note
+                        );
+
                         updateIfPresent(existing, category, brand, model,
                                 barcode, size, sph, cyl, addPower, prism,
                                 retailPrice, note);
@@ -231,6 +259,15 @@ public class ExcelProductImportService {
                         }
 
                         productRepository.save(existing);
+                        if (changed) {
+                            activityLogService.log(
+                                    ActivityAction.UPDATE,
+                                    "PRODUCT",
+                                    existing.getId(),
+                                    "Обновен продукт чрез Excel импорт: "
+                                            + describeProduct(existing)
+                            );
+                        }
                         updated++;
                     }
 
@@ -649,5 +686,55 @@ public class ExcelProductImportService {
         return value == null
                 ? "0"
                 : value.stripTrailingZeros().toPlainString();
+    }
+
+    private boolean hasProductChanges(
+            Product existing,
+            ProductCategory category,
+            String brand,
+            String model,
+            String barcode,
+            String size,
+            BigDecimal sph,
+            BigDecimal cyl,
+            BigDecimal addPower,
+            BigDecimal prism,
+            BigDecimal purchasePrice,
+            BigDecimal retailPrice,
+            String note) {
+
+        return existing.getCategory() != category
+                || !Objects.equals(existing.getBrand(), brand)
+                || !Objects.equals(existing.getModel(), model)
+                || (normalize(barcode) != null
+                && !Objects.equals(existing.getBarcode(), normalize(barcode)))
+                || (normalize(size) != null
+                && !Objects.equals(existing.getSizeOrDiameter(), normalize(size)))
+                || (sph != null && !sameValue(existing.getSph(), sph))
+                || (cyl != null && !sameValue(existing.getCyl(), cyl))
+                || (addPower != null && !sameValue(existing.getAddPower(), addPower))
+                || (prism != null && !sameValue(existing.getPrism(), prism))
+                || (purchasePrice != null
+                && !sameValue(existing.getPurchasePrice(), purchasePrice))
+                || (retailPrice != null
+                && !sameValue(existing.getRetailPrice(), retailPrice))
+                || (normalize(note) != null
+                && !Objects.equals(existing.getNote(), note.trim()));
+    }
+
+    private boolean sameValue(BigDecimal first, BigDecimal second) {
+
+        if (first == null || second == null) {
+            return first == second;
+        }
+
+        return first.compareTo(second) == 0;
+    }
+
+    private String describeProduct(Product product) {
+
+        return product.getCategory().getDisplayName()
+                + " - " + product.getBrand()
+                + " " + product.getModel();
     }
 }

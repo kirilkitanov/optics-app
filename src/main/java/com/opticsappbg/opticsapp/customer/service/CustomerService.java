@@ -1,5 +1,7 @@
 package com.opticsappbg.opticsapp.customer.service;
 
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import com.opticsappbg.opticsapp.customer.model.Customer;
 import com.opticsappbg.opticsapp.customer.model.CustomerPayment;
 import com.opticsappbg.opticsapp.customer.repository.CustomerPaymentRepository;
@@ -23,6 +25,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerPaymentRepository customerPaymentRepository;
+    private final ActivityLogService activityLogService;
 
     public List<Customer> getAllCustomers() {
         return customerRepository.findAll();
@@ -42,6 +45,13 @@ public class CustomerService {
 
         Customer saved = customerRepository.save(customer);
 
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "CUSTOMER",
+                saved.getId(),
+                "Създаден клиент: " + saved.getFullName()
+        );
+
         return new CustomerDto(
                 saved.getId(),
                 saved.getFullName(),
@@ -60,7 +70,16 @@ public class CustomerService {
         customer.setNote(req.getNote());
         customer.setCreatedOn(LocalDateTime.now());
 
-        return customerRepository.save(customer);
+        Customer saved = customerRepository.save(customer);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "CUSTOMER",
+                saved.getId(),
+                "Създаден клиент: " + saved.getFullName()
+        );
+
+        return saved;
     }
 
     // Редакция на съществуващ клиент
@@ -74,7 +93,16 @@ public class CustomerService {
         customer.setNote(req.getNote());
         customer.setUpdatedOn(LocalDateTime.now());
 
-        return customerRepository.save(customer);
+        Customer saved = customerRepository.save(customer);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "CUSTOMER",
+                saved.getId(),
+                "Редактиран клиент: " + saved.getFullName()
+        );
+
+        return saved;
     }
 
     @Transactional(readOnly = true)

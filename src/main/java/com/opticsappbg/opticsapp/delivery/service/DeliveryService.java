@@ -11,6 +11,8 @@ import com.opticsappbg.opticsapp.supplier.repository.SupplierRepository;
 import com.opticsappbg.opticsapp.user.model.User;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class DeliveryService {
     private final DeliveryRepository deliveryRepository;
     private final SupplierRepository supplierRepository;
     private final ProductService productService;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public Delivery createDelivery(CreateDeliveryRequest request, User user) {
@@ -223,7 +226,19 @@ public class DeliveryService {
             }
         }
 
-        return deliveryRepository.save(delivery);
+        Delivery savedDelivery = deliveryRepository.save(delivery);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "DELIVERY",
+                savedDelivery.getId(),
+                "Създадена доставка №"
+                        + savedDelivery.getInvoiceNumber()
+                        + " от доставчик "
+                        + savedDelivery.getSupplier().getCompanyName()
+        );
+
+        return savedDelivery;
     }
 
     @Transactional
@@ -576,7 +591,17 @@ public class DeliveryService {
             }
         }
 
-        deliveryRepository.save(delivery);
+        Delivery savedDelivery = deliveryRepository.save(delivery);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "DELIVERY",
+                savedDelivery.getId(),
+                "Редактирана доставка №"
+                        + savedDelivery.getInvoiceNumber()
+                        + " от доставчик "
+                        + savedDelivery.getSupplier().getCompanyName()
+        );
     }
 
     private int getStockChange(DeliveryDocumentType documentType, int quantity) {

@@ -1,5 +1,7 @@
 package com.opticsappbg.opticsapp.order.service;
 
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import com.opticsappbg.opticsapp.customer.repository.CustomerRepository;
 import com.opticsappbg.opticsapp.order.model.*;
 import com.opticsappbg.opticsapp.order.repository.OrderRepository;
@@ -32,6 +34,7 @@ public class OrderService {
     private final CustomerRepository customerRepository;
     private final ProductService productService;
     private final OrderPricingService pricingService;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public Order createOrder(CreateOrderRequest request, User user) {
@@ -67,6 +70,14 @@ public class OrderService {
                 + String.format("%04d", savedOrder.getId());
 
         savedOrder.setOrderNumber(generatedOrderNumber);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "ORDER",
+                savedOrder.getId(),
+                "Създадена поръчка №" + savedOrder.getOrderNumber()
+                        + " за клиент " + savedOrder.getCustomer().getFullName()
+        );
 
         return savedOrder;
     }
@@ -260,6 +271,14 @@ public class OrderService {
         order.setUpdatedOn(LocalDateTime.now());
 
         orderRepository.save(order);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "ORDER",
+                order.getId(),
+                "Редактирана поръчка №" + order.getOrderNumber()
+                        + " за клиент " + order.getCustomer().getFullName()
+        );
     }
 
     public List<Order> getActiveOrders() {
@@ -272,11 +291,6 @@ public class OrderService {
     }
 
     @Transactional
-    public void saveOrder(Order order) {
-        orderRepository.save(order);
-    }
-
-    @Transactional
     public void updateOrderStatus(Long id, OrderStatus newStatus) {
 
         Order order = orderRepository.findById(id)
@@ -284,6 +298,12 @@ public class OrderService {
 
         // Анулирана поръчка не може да се променя повторно.
         if (order.getStatus() == OrderStatus.CANCELLED) {
+            return;
+        }
+
+        OrderStatus previousStatus = order.getStatus();
+
+        if (previousStatus == newStatus) {
             return;
         }
 
@@ -303,6 +323,15 @@ public class OrderService {
         order.setUpdatedOn(LocalDateTime.now());
 
         orderRepository.save(order);
+
+        activityLogService.log(
+                ActivityAction.STATUS_CHANGE,
+                "ORDER",
+                order.getId(),
+                "Променен статус на поръчка №" + order.getOrderNumber()
+                        + " от " + previousStatus
+                        + " на " + newStatus
+        );
     }
 
     public Page<Order> getOrdersForPeriod(

@@ -21,6 +21,7 @@ public class AuthenticationDetails implements UserDetails {
     private Long userId;
     private String username;
     private String password;
+    private String fullName;
     private UserRole role;
     private boolean isActive;
 

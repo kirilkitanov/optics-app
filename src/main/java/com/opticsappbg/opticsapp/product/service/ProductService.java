@@ -3,6 +3,7 @@ package com.opticsappbg.opticsapp.product.service;
 
 import com.opticsappbg.opticsapp.delivery.repository.DeliveryItemRepository;
 import com.opticsappbg.opticsapp.order.model.Order;
+import com.opticsappbg.opticsapp.order.model.OrderItem;
 import com.opticsappbg.opticsapp.order.repository.OrderItemRepository;
 import com.opticsappbg.opticsapp.order.service.OrderPricingService;
 import com.opticsappbg.opticsapp.product.model.Product;
@@ -11,10 +12,15 @@ import com.opticsappbg.opticsapp.product.repository.StockAdjustmentRepository;
 import com.opticsappbg.opticsapp.web.dto.CreateDeliveryItemRequest;
 import com.opticsappbg.opticsapp.web.dto.CreateOrderItemRequest;
 import com.opticsappbg.opticsapp.web.dto.DeliveryImportPreviewItem;
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
+
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.opticsappbg.opticsapp.order.model.OrderItem;
+
+
+
 
 import java.util.*;
 
@@ -29,6 +35,7 @@ public class ProductService {
     private final OrderPricingService orderPricingService;
     private final DeliveryItemRepository deliveryItemRepository;
     private final StockAdjustmentRepository stockAdjustmentRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public Product findOrCreate(CreateOrderItemRequest req) {
@@ -266,7 +273,16 @@ public class ProductService {
         newProduct.setRetailPrice(BigDecimal.ZERO);
         newProduct.setCreatedOn(java.time.LocalDateTime.now());
 
-        return productRepository.save(newProduct);
+        Product savedProduct = productRepository.save(newProduct);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "PRODUCT",
+                savedProduct.getId(),
+                "Създаден продукт от доставка: " + describeProduct(savedProduct)
+        );
+
+        return savedProduct;
     }
 
     private Product createProductFromRequest(
@@ -291,7 +307,16 @@ public class ProductService {
         newProduct.setQuantity(0);
         newProduct.setRetailPrice(req.getSalePriceAtSale());
 
-        return productRepository.save(newProduct);
+        Product savedProduct = productRepository.save(newProduct);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "PRODUCT",
+                savedProduct.getId(),
+                "Създаден продукт: " + describeProduct(savedProduct)
+        );
+
+        return savedProduct;
     }
 
     public List<Product> findProductsByCharacteristics(CreateOrderItemRequest req) {
@@ -359,6 +384,13 @@ public class ProductService {
             );
         }
 
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "PRODUCT",
+                product.getId(),
+                "Изтрит продукт: " + describeProduct(product)
+        );
+
         productRepository.delete(product);
     }
 
@@ -418,7 +450,16 @@ public class ProductService {
             product.setCreatedOn(java.time.LocalDateTime.now());
         }
 
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "PRODUCT",
+                savedProduct.getId(),
+                "Създаден продукт: " + describeProduct(savedProduct)
+        );
+
+        return savedProduct;
     }
 
     private boolean isBlank(String value) {
@@ -427,9 +468,12 @@ public class ProductService {
 
     @Transactional
     public Product updateProduct(Long productId, Product formProduct) {
+
         Product existingProduct = getProductById(productId);
 
         validateProductIdentity(formProduct, productId);
+
+        boolean changed = hasProductChanges(existingProduct, formProduct);
 
         existingProduct.setCategory(formProduct.getCategory());
         existingProduct.setBarcode(formProduct.getBarcode());
@@ -447,7 +491,18 @@ public class ProductService {
             updatePurchasePrice(productId, formProduct.getPurchasePrice());
         }
 
-        return productRepository.save(existingProduct);
+        Product savedProduct = productRepository.save(existingProduct);
+
+        if (changed) {
+            activityLogService.log(
+                    ActivityAction.UPDATE,
+                    "PRODUCT",
+                    savedProduct.getId(),
+                    "Редактиран продукт: " + describeProduct(savedProduct)
+            );
+        }
+
+        return savedProduct;
     }
 
     public List<String[]> getBrandModelPairs() {
@@ -731,6 +786,43 @@ public class ProductService {
         return value == null
                 ? ""
                 : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String describeProduct(Product product) {
+
+        String category = product.getCategory() != null
+                ? product.getCategory().getDisplayName()
+                : "Продукт";
+
+        return category + " - "
+                + product.getBrand() + " "
+                + product.getModel();
+    }
+
+    private boolean hasProductChanges(Product existing, Product form) {
+
+        return existing.getCategory() != form.getCategory()
+                || !Objects.equals(existing.getBarcode(), form.getBarcode())
+                || !Objects.equals(existing.getBrand(), form.getBrand())
+                || !Objects.equals(existing.getModel(), form.getModel())
+                || !Objects.equals(existing.getSizeOrDiameter(), form.getSizeOrDiameter())
+                || !sameValue(existing.getSph(), form.getSph())
+                || !sameValue(existing.getCyl(), form.getCyl())
+                || !sameValue(existing.getAddPower(), form.getAddPower())
+                || !sameValue(existing.getPrism(), form.getPrism())
+                || !sameValue(existing.getRetailPrice(), form.getRetailPrice())
+                || !Objects.equals(existing.getNote(), form.getNote())
+                || (form.getPurchasePrice() != null
+                && !sameValue(existing.getPurchasePrice(), form.getPurchasePrice()));
+    }
+
+    private boolean sameValue(BigDecimal first, BigDecimal second) {
+
+        if (first == null || second == null) {
+            return first == second;
+        }
+
+        return first.compareTo(second) == 0;
     }
 
 }

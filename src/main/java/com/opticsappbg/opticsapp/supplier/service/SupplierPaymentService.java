@@ -1,5 +1,7 @@
 package com.opticsappbg.opticsapp.supplier.service;
 
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import com.opticsappbg.opticsapp.customer.model.PaymentMethod;
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.delivery.repository.DeliveryRepository;
@@ -21,6 +23,7 @@ public class SupplierPaymentService {
 
     private final SupplierPaymentRepository supplierPaymentRepository;
     private final DeliveryRepository deliveryRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional
     public SupplierPayment addPayment(
@@ -47,7 +50,18 @@ public class SupplierPaymentService {
         payment.setCreatedOn(LocalDateTime.now());
         payment.setCreatedBy(currentUser);
 
-        return supplierPaymentRepository.save(payment);
+        SupplierPayment savedPayment = supplierPaymentRepository.save(payment);
+
+        activityLogService.log(
+                ActivityAction.PAYMENT,
+                "SUPPLIER_PAYMENT",
+                savedPayment.getId(),
+                "Извършено плащане към доставчик "
+                        + delivery.getSupplier().getCompanyName()
+                        + " по доставка №" + delivery.getInvoiceNumber()
+        );
+
+        return savedPayment;
     }
 
     @Transactional(readOnly = true)
@@ -103,7 +117,18 @@ public class SupplierPaymentService {
         refund.setCreatedOn(LocalDateTime.now());
         refund.setCreatedBy(currentUser);
 
-        return supplierPaymentRepository.save(refund);
+        SupplierPayment savedRefund = supplierPaymentRepository.save(refund);
+
+        activityLogService.log(
+                ActivityAction.REFUND,
+                "SUPPLIER_PAYMENT",
+                savedRefund.getId(),
+                "Получено възстановяване от доставчик "
+                        + delivery.getSupplier().getCompanyName()
+                        + " по доставка №" + delivery.getInvoiceNumber()
+        );
+
+        return savedRefund;
     }
 
     @Transactional
@@ -141,6 +166,14 @@ public class SupplierPaymentService {
         payment.setUpdatedOn(LocalDateTime.now());
 
         supplierPaymentRepository.save(payment);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "SUPPLIER_PAYMENT",
+                payment.getId(),
+                "Редактиран финансов запис към доставка №"
+                        + payment.getDelivery().getInvoiceNumber()
+        );
     }
 
     @Transactional
@@ -160,8 +193,27 @@ public class SupplierPaymentService {
 
         validatePaymentPermission(payment, currentUser);
 
-        supplierPaymentRepository.delete(payment);
-    }
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "SUPPLIER_PAYMENT",
+                payment.getId(),
+                (payment.getAmount().compareTo(BigDecimal.ZERO) < 0
+                        ? "Изтрито възстановяване по доставка №"
+                        : "Изтрито плащане по доставка №")
+                        + payment.getDelivery().getInvoiceNumber()
+        );
+
+        activityLogService.log(
+                ActivityAction.DELETE,
+                "SUPPLIER_PAYMENT",
+                payment.getId(),
+                (payment.getAmount().compareTo(BigDecimal.ZERO) < 0
+                        ? "Изтрито възстановяване по доставка №"
+                        : "Изтрито плащане по доставка №")
+                        + payment.getDelivery().getInvoiceNumber()
+        );
+
+        supplierPaymentRepository.delete(payment);    }
 
     private void validatePaymentPermission(
             SupplierPayment payment,

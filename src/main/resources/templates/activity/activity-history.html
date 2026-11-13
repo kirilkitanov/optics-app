@@ -1,10 +1,203 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История на действията</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
+
 <body>
-$END$
+
+<div class="app-wrapper">
+
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="main-container">
+
+        <div th:replace="~{sidebar :: sidebar-fragment}"></div>
+
+        <section class="content user-form-page">
+
+            <div class="content-header">
+                <h1 class="page-title-blue">История на действията</h1>
+                <a th:href="@{/system}" class="btn-new-order">Назад</a>
+            </div>
+
+            <!-- Филтри -->
+            <div class="table-container">
+
+                <form th:action="@{/activity}" method="get">
+
+                    <div class="item-row">
+                        <div class="item-fields" style="grid-template-columns: repeat(7, minmax(0, 1fr));">
+
+                            <div class="item-field">
+                                <label for="userId">Потребител</label>
+                                <select id="userId"
+                                        name="userId"
+                                        class="status-select">
+                                    <option value="">Всички потребители</option>
+                                    <option th:each="user : ${users}"
+                                            th:value="${user.id}"
+                                            th:selected="${selectedUserId != null and selectedUserId == user.id}"
+                                            th:text="${user.fullName != null and !user.fullName.isBlank()
+                                                ? user.fullName + ' (' + user.username + ')'
+                                                : user.username}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="dateFrom">От дата</label>
+                                <input type="date"
+                                       id="dateFrom"
+                                       name="dateFrom"
+                                       class="status-select"
+                                       th:value="${dateFrom}">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="dateTo">До дата</label>
+                                <input type="date"
+                                       id="dateTo"
+                                       name="dateTo"
+                                       class="status-select"
+                                       th:value="${dateTo}">
+                            </div>
+
+                            <div class="item-field">
+                                <label for="action">Действие</label>
+                                <select id="action"
+                                        name="action"
+                                        class="status-select">
+                                    <option value="">Всички действия</option>
+                                    <option th:each="item : ${actions}"
+                                            th:value="${item.name()}"
+                                            th:selected="${selectedAction == item}"
+                                            th:text="${item.name() == 'CREATE' ? 'Създаване' :
+                                                (item.name() == 'UPDATE' ? 'Редакция' :
+                                                (item.name() == 'DELETE' ? 'Изтриване' :
+                                                (item.name() == 'STATUS_CHANGE' ? 'Промяна на статус' :
+                                                (item.name() == 'PAYMENT' ? 'Плащане' :
+                                                (item.name() == 'REFUND' ? 'Възстановяване' :
+                                                (item.name() == 'IMPORT' ? 'Импорт' : 'Експорт'))))))}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="item-field">
+                                <label for="entityType">Тип обект</label>
+                                <select id="entityType"
+                                        name="entityType"
+                                        class="status-select">
+                                    <option value="">Всички обекти</option>
+                                    <option th:each="item : ${entityTypes}"
+                                            th:value="${item}"
+                                            th:selected="${selectedEntityType == item}"
+                                            th:text="${item == 'PRODUCT' ? 'Продукт' :
+                                                (item == 'ORDER' ? 'Поръчка' :
+                                                (item == 'DELIVERY' ? 'Доставка' :
+                                                (item == 'CUSTOMER_PAYMENT' ? 'Плащане от клиент' :
+                                                (item == 'SUPPLIER_PAYMENT' ? 'Плащане към доставчик' :
+                                                (item == 'CUSTOMER' ? 'Клиент' :
+                                                (item == 'SUPPLIER' ? 'Доставчик' : 'Потребител'))))))}">
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="item-field">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn-new-order">
+                                    Покажи
+                                </button>
+                            </div>
+
+                            <div class="item-field">
+                                <label>&nbsp;</label>
+                                <a th:href="@{/activity}" class="btn-new-order">
+                                    Изчисти филтрите
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                </form>
+
+            </div>
+
+            <!-- Списък с действия -->
+
+            <div class="table-container">
+
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Дата и час</th>
+                        <th>Потребител</th>
+                        <th>Действие</th>
+                        <th>Обект</th>
+                        <th>Описание</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="log : ${logs}">
+
+                        <td style="white-space: nowrap;"
+                            th:text="${#temporals.format(log.createdOn, 'dd.MM.yyyy HH:mm:ss')}">
+                        </td>
+
+                        <td th:text="${log.fullName != null and !log.fullName.isBlank()
+                            ? log.fullName + ' (' + log.username + ')'
+                            : log.username}">
+                        </td>
+
+                        <td style="white-space: nowrap;"
+                            th:text="${log.action.name() == 'CREATE' ? 'Създаване' :
+                            (log.action.name() == 'UPDATE' ? 'Редакция' :
+                            (log.action.name() == 'DELETE' ? 'Изтриване' :
+                            (log.action.name() == 'STATUS_CHANGE' ? 'Промяна на статус' :
+                            (log.action.name() == 'PAYMENT' ? 'Плащане' :
+                            (log.action.name() == 'REFUND' ? 'Възстановяване' :
+                            (log.action.name() == 'IMPORT' ? 'Импорт' : 'Експорт'))))))}">
+                        </td>
+
+                        <td style="white-space: nowrap;">
+                            <span th:if="${log.entityType == 'PRODUCT'}">Продукт</span>
+                            <span th:if="${log.entityType == 'ORDER'}">Поръчка</span>
+                            <span th:if="${log.entityType == 'DELIVERY'}">Доставка</span>
+                            <span th:if="${log.entityType == 'CUSTOMER_PAYMENT'}">Плащане от клиент</span>
+                            <span th:if="${log.entityType == 'SUPPLIER_PAYMENT'}">Плащане към доставчик</span>
+                            <span th:if="${log.entityType == 'CUSTOMER'}">Клиент</span>
+                            <span th:if="${log.entityType == 'SUPPLIER'}">Доставчик</span>
+                            <span th:if="${log.entityType == 'USER'}">Потребител</span>
+
+                            <span th:if="${log.entityId != null}"
+                                  th:text="' №' + ${log.entityId}">
+                            </span>
+                        </td>
+
+                        <td th:text="${log.description}"></td>
+
+                    </tr>
+
+                    <tr th:if="${#lists.isEmpty(logs)}">
+                        <td colspan="5" class="empty-table-message">
+                            Няма намерени действия.
+                        </td>
+                    </tr>
+
+                    </tbody>
+                </table>
+
+            </div>
+
+        </section>
+    </div>
+</div>
+
 </body>
 </html>

@@ -65,7 +65,8 @@
     </div>
 
     <!-- История на действията -->
-    <div class="table-container product-detail-note">        
+    <!-- История на действията -->
+    <div class="table-container product-detail-note">
         <div class="product-details-heading">
             <h2>История на действията</h2>
         </div>
@@ -73,9 +74,11 @@
             Преглед на последните 500 действия,
             извършени в приложението.
         </p>
-        <p class="product-details-hint">
-            Функционалността предстои да бъде реализирана.
-        </p>
+        <div class="form-actions">
+            <a th:href="@{/activity}" class="btn-new-order">
+                Преглед на историята
+            </a>
+        </div>
     </div>
 
     <!-- Помощ -->

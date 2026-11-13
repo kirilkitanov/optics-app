@@ -1,4 +1,12 @@
 package com.opticsappbg.opticsapp.activity.model;
 
-public class ActivityAction {
+public enum ActivityAction {
+    CREATE,
+    UPDATE,
+    DELETE,
+    STATUS_CHANGE,
+    PAYMENT,
+    REFUND,
+    IMPORT,
+    EXPORT
 }

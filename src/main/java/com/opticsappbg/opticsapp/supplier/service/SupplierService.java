@@ -1,5 +1,7 @@
 package com.opticsappbg.opticsapp.supplier.service;
 
+import com.opticsappbg.opticsapp.activity.model.ActivityAction;
+import com.opticsappbg.opticsapp.activity.service.ActivityLogService;
 import com.opticsappbg.opticsapp.delivery.model.Delivery;
 import com.opticsappbg.opticsapp.delivery.repository.DeliveryRepository;
 import com.opticsappbg.opticsapp.supplier.model.Supplier;
@@ -24,6 +26,7 @@ public class SupplierService {
     private final SupplierRepository supplierRepository;
     private final DeliveryRepository deliveryRepository;
     private final SupplierPaymentRepository supplierPaymentRepository;
+    private final ActivityLogService activityLogService;
 
     @Transactional(readOnly = true)
     public List<Supplier> getAllSuppliers() {
@@ -60,7 +63,16 @@ public class SupplierService {
                 .updatedOn(now)
                 .build();
 
-        return supplierRepository.save(supplier);
+        Supplier saved = supplierRepository.save(supplier);
+
+        activityLogService.log(
+                ActivityAction.CREATE,
+                "SUPPLIER",
+                saved.getId(),
+                "Създаден доставчик: " + saved.getCompanyName()
+        );
+
+        return saved;
     }
 
     @Transactional
@@ -85,7 +97,16 @@ public class SupplierService {
         supplier.setNote(request.getNote());
         supplier.setUpdatedOn(LocalDateTime.now());
 
-        return supplierRepository.save(supplier);
+        Supplier saved = supplierRepository.save(supplier);
+
+        activityLogService.log(
+                ActivityAction.UPDATE,
+                "SUPPLIER",
+                saved.getId(),
+                "Редактиран доставчик: " + saved.getCompanyName()
+        );
+
+        return saved;
     }
 
     private void validateCompanyName(String companyName) {
