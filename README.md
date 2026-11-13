@@ -62,7 +62,7 @@ Screenshots of the application will be added here.
 
 ## Copyright and Usage
 
-Copyright © 2026 Кирил Китанов. All rights reserved.
+Copyright © 2026 Kiril Kitanov. All rights reserved.
 
 OpticsApp is an original software project developed by the author.
 
