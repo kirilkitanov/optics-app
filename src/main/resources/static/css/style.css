@@ -1646,3 +1646,23 @@ body:has(.customer-row) .content-header .order-search-form {
     margin: 0 0 0 auto;
 }
 
+/* Activity history */
+.activity-history-filters {
+    background: #fff;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.activity-history-filters .item-fields {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    align-items: end;
+}
+
+.activity-history-filters .item-field {
+    min-width: 0;
+}
+

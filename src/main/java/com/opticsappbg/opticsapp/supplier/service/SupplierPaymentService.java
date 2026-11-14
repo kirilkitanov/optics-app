@@ -203,16 +203,6 @@ public class SupplierPaymentService {
                         + payment.getDelivery().getInvoiceNumber()
         );
 
-        activityLogService.log(
-                ActivityAction.DELETE,
-                "SUPPLIER_PAYMENT",
-                payment.getId(),
-                (payment.getAmount().compareTo(BigDecimal.ZERO) < 0
-                        ? "Изтрито възстановяване по доставка №"
-                        : "Изтрито плащане по доставка №")
-                        + payment.getDelivery().getInvoiceNumber()
-        );
-
         supplierPaymentRepository.delete(payment);    }
 
     private void validatePaymentPermission(

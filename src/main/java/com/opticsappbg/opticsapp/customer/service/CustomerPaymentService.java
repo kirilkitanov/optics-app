@@ -121,22 +121,6 @@ public class CustomerPaymentService {
                         + payment.getOrder().getOrderNumber()
         );
 
-        activityLogService.log(
-                ActivityAction.DELETE,
-                "CUSTOMER_PAYMENT",
-                payment.getId(),
-                "Изтрито плащане по поръчка №"
-                        + payment.getOrder().getOrderNumber()
-        );
-
-        activityLogService.log(
-                ActivityAction.DELETE,
-                "CUSTOMER_PAYMENT",
-                payment.getId(),
-                "Изтрито плащане по поръчка №"
-                        + payment.getOrder().getOrderNumber()
-        );
-
         customerPaymentRepository.delete(payment);
     }
 
